@@ -9,6 +9,7 @@ import 'core/constants/app_constants.dart';
 import 'core/constants/app_strings.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/bootstrap/app_bootstrap.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,6 +55,10 @@ class AurumApp extends StatelessWidget {
       ],
       theme: AppTheme.lightTheme,
       routerConfig: appRouter,
+      builder: (context, child) {
+        if (child == null) return const SizedBox.shrink();
+        return AppBootstrap(child: child);
+      },
     );
   }
 }

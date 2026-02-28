@@ -1,30 +1,57 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
+import 'package:aurum_app/core/constants/app_strings.dart';
+import 'package:aurum_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:aurum_app/features/products/domain/models/product.dart';
+import 'package:aurum_app/features/products/presentation/providers/product_provider.dart';
+import 'package:aurum_app/features/store/presentation/pages/store_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:aurum_app/main.dart';
-
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('render basico', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: Text('Aurum')),
+      ),
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('Aurum'), findsOneWidget);
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  testWidgets('store: abre y cierra filtros sin errores', (WidgetTester tester) async {
+    final sample = Product(
+      id: 'p1',
+      name: 'Camisa test',
+      price: 89,
+      slug: 'camisa-test',
+      images: const [],
+      categoryId: 'c1',
+      category: const {'name': 'Camisas'},
+      sizes: const ['S', 'M'],
+      isActive: true,
+      createdAt: DateTime(2026, 1, 1),
+    );
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          currentUserProvider.overrideWith((ref) => null),
+          productsProvider.overrideWith((ref) async => [sample]),
+        ],
+        child: const MaterialApp(home: StoreScreen()),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip(AppStrings.filtros));
+    await tester.pumpAndSettle();
+
+    expect(find.text(AppStrings.filtros), findsOneWidget);
+
+    await tester.tap(find.text(AppStrings.limpiar));
+    await tester.pumpAndSettle();
+
+    expect(find.text(AppStrings.filtros), findsNothing);
   });
 }

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/design_system/widgets/aurum_card.dart';
@@ -59,7 +59,7 @@ class _AdminCustomersScreenState extends ConsumerState<AdminCustomersScreen> {
                   SizedBox(
                     width: 140,
                     child: DropdownButtonFormField<String>(
-                      value: _role,
+                      initialValue: _role,
                       decoration: const InputDecoration(labelText: 'Rol'),
                       items: const [
                         DropdownMenuItem(value: 'all', child: Text('Todos')),
@@ -99,7 +99,7 @@ class _AdminCustomersScreenState extends ConsumerState<AdminCustomersScreen> {
                     trailing: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        color: (c['role'] == 'admin' ? Colors.purple : AppTheme.gold).withOpacity(0.12),
+                        color: (c['role'] == 'admin' ? Colors.purple : AppTheme.gold).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(

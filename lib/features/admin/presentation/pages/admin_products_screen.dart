@@ -1,6 +1,7 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/design_system/widgets/aurum_card.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -34,6 +35,25 @@ class _AdminProductsScreenState extends ConsumerState<AdminProductsScreen> {
         .whereType<Map>()
         .map((e) => Map<String, dynamic>.from(e))
         .toList();
+  }
+
+  List<String> _asStringList(dynamic raw) {
+    if (raw is! List) return const [];
+    return raw.map((e) => e.toString()).where((e) => e.isNotEmpty).toList();
+  }
+
+  String? _primaryImage(dynamic raw) {
+    final images = _asStringList(raw);
+    return images.isEmpty ? null : images.first;
+  }
+  String? _resolveImageUrl(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    final raw = value.trim();
+    if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+    final normalized = raw.startsWith('/') ? raw.substring(1) : raw;
+    return Supabase.instance.client.storage
+        .from('product-images')
+        .getPublicUrl(normalized);
   }
 
   String _categoryName(dynamic categoriesField) {
@@ -108,6 +128,15 @@ class _AdminProductsScreenState extends ConsumerState<AdminProductsScreen> {
                       style: Theme.of(context).textTheme.displayMedium,
                     ),
                   ),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      await context.push('/admin/categories');
+                      if (mounted) setState(() {});
+                    },
+                    icon: const Icon(Icons.category_outlined),
+                    label: const Text('Categorias'),
+                  ),
+                  const SizedBox(width: 8),
                   ElevatedButton.icon(
                     onPressed: () async {
                       await context.push('/admin/products/new');
@@ -134,7 +163,7 @@ class _AdminProductsScreenState extends ConsumerState<AdminProductsScreen> {
                     Column(
                       children: [
                         DropdownButtonFormField<String>(
-                          value: selectedCategory,
+                          initialValue: selectedCategory,
                           decoration: const InputDecoration(labelText: 'Categoria'),
                           isExpanded: true,
                           items: [
@@ -153,7 +182,7 @@ class _AdminProductsScreenState extends ConsumerState<AdminProductsScreen> {
                           children: [
                             Expanded(
                               child: DropdownButtonFormField<String>(
-                                value: _stock,
+                                initialValue: _stock,
                                 decoration: const InputDecoration(labelText: 'Stock'),
                                 isExpanded: true,
                                 items: const [
@@ -167,7 +196,7 @@ class _AdminProductsScreenState extends ConsumerState<AdminProductsScreen> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: DropdownButtonFormField<String>(
-                                value: _status,
+                                initialValue: _status,
                                 decoration: const InputDecoration(labelText: 'Estado'),
                                 isExpanded: true,
                                 items: const [
@@ -206,13 +235,38 @@ class _AdminProductsScreenState extends ConsumerState<AdminProductsScreen> {
                       children: [
                         ListTile(
                           contentPadding: EdgeInsets.zero,
+                          leading: _ProductThumb(imageUrl: _resolveImageUrl(_primaryImage(p['images']))),
                           title: Text(p['name']?.toString() ?? '-'),
                           subtitle: Text(
-                            '${_categoryName(p['categories'])}  -  Stock: $totalStock',
+                            [
+                              'Categoria: ${_categoryName(p['categories'])}',
+                              'Stock: $totalStock',
+                              'Slug: ${p['slug'] ?? '-'}',
+                              'SKU: ${p['sku'] ?? '-'}',
+                              'Estado: ${p['is_active'] == true ? 'Activo' : 'Inactivo'}',
+                            ].join('\n'),
                           ),
-                          trailing: Text(
-                            Formatters.euro(displayPrice / 100),
-                            style: const TextStyle(color: AppTheme.gold, fontWeight: FontWeight.w700),
+                          trailing: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                Formatters.euro(displayPrice / 100),
+                                style: const TextStyle(
+                                  color: AppTheme.gold,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              if (p['is_on_sale'] == true &&
+                                  _toInt(p['price']) != displayPrice)
+                                Text(
+                                  Formatters.euro(_toInt(p['price']) / 100),
+                                  style: const TextStyle(
+                                    decoration: TextDecoration.lineThrough,
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                         Wrap(
@@ -234,9 +288,9 @@ class _AdminProductsScreenState extends ConsumerState<AdminProductsScreen> {
                               label: const Text('Editar'),
                             ),
                             TextButton.icon(
-                              onPressed: () => _softDelete(p['id'].toString(), p['name']?.toString() ?? 'Producto'),
+                              onPressed: () => _deleteProduct(p['id'].toString(), p['name']?.toString() ?? 'Producto'),
                               icon: const Icon(Icons.delete_outline, color: Colors.red),
-                              label: const Text('Desactivar', style: TextStyle(color: Colors.red)),
+                              label: const Text('Eliminar', style: TextStyle(color: Colors.red)),
                             ),
                           ],
                         ),
@@ -264,6 +318,8 @@ class _AdminProductsScreenState extends ConsumerState<AdminProductsScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _ProductThumb(imageUrl: _resolveImageUrl(_primaryImage(product['images']))),
+                const SizedBox(height: 10),
                 Text(
                   product['name']?.toString() ?? '-',
                   style: Theme.of(context).textTheme.titleLarge,
@@ -286,32 +342,71 @@ class _AdminProductsScreenState extends ConsumerState<AdminProductsScreen> {
     );
   }
 
-  Future<void> _softDelete(String id, String name) async {
+  Future<void> _deleteProduct(String id, String name) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Desactivar producto'),
-        content: Text('Se desactivara "$name". Podras reactivarlo editando el producto.'),
+        title: const Text('Eliminar producto'),
+        content: Text(
+          'Se eliminara "$name" de forma permanente solo si no tiene pedidos asociados.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Desactivar')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Eliminar'),
+          ),
         ],
       ),
     );
 
     if (confirm != true) return;
     try {
-      await ref.read(adminRepositoryProvider).softDeleteProduct(id);
+      await ref.read(adminRepositoryProvider).deleteProductIfNoOrders(id);
       if (!mounted) return;
       setState(() {});
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Producto desactivado')),
+        const SnackBar(content: Text('Producto eliminado')),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo desactivar: $e')),
+        SnackBar(content: Text('No se pudo eliminar: $e')),
       );
     }
   }
 }
+
+class _ProductThumb extends StatelessWidget {
+  const _ProductThumb({this.imageUrl});
+
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: SizedBox(
+        width: 56,
+        height: 56,
+        child: imageUrl == null
+            ? Container(
+                color: Colors.black12,
+                child: const Icon(Icons.image_not_supported_outlined),
+              )
+            : Image.network(
+                imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: Colors.black12,
+                  child: const Icon(Icons.broken_image_outlined),
+                ),
+              ),
+      ),
+    );
+  }
+}
+

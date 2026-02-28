@@ -6,11 +6,33 @@ class ProductRepository {
 
   ProductRepository(this._supabase);
 
+  List<String> _normalizeImages(dynamic raw) {
+    if (raw is! List) return const [];
+    return raw
+        .map((e) => e.toString().trim())
+        .where((e) => e.isNotEmpty)
+        .map((value) {
+          if (value.startsWith('http://') || value.startsWith('https://')) {
+            return value;
+          }
+          final normalized = value.startsWith('/') ? value.substring(1) : value;
+          return _supabase.storage.from('product-images').getPublicUrl(normalized);
+        })
+        .toList();
+  }
+
+  Map<String, dynamic> _normalizeProductJson(Map<String, dynamic> input) {
+    final map = Map<String, dynamic>.from(input);
+    map['images'] = _normalizeImages(map['images']);
+    return map;
+  }
+
   List<Product> _toProducts(dynamic response) {
     if (response is! List) return const [];
     return response
         .whereType<Map>()
-        .map((e) => Product.fromJson(Map<String, dynamic>.from(e)))
+        .map((e) => _normalizeProductJson(Map<String, dynamic>.from(e)))
+        .map(Product.fromJson)
         .toList();
   }
 
@@ -41,7 +63,8 @@ class ProductRepository {
         .select('*, categories(name, slug)')
         .eq('is_active', true)
         .eq('is_on_sale', true)
-        .eq('is_featured', true)
+        .not('sale_price', 'is', null)
+        .gt('sale_price', 0)
         .order('updated_at', ascending: false)
         .order('created_at', ascending: false)
         .limit(limit);
@@ -89,5 +112,20 @@ class ProductRepository {
     ];
 
     return merged.take(limit).toList();
+  }
+
+  Future<Product?> getProductById(String productId) async {
+    final response = await _supabase
+        .from('products')
+        .select('*, categories(name, slug)')
+        .eq('id', productId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+    if (response == null) {
+      return null;
+    }
+
+    return Product.fromJson(_normalizeProductJson(response));
   }
 }

@@ -41,12 +41,59 @@ class _AdminShellScreenState extends ConsumerState<AdminShellScreen> {
 
     return profileAsync.when(
       data: (profile) {
-        if (profile?.role != 'admin') {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) context.go('/home');
-          });
-          return const Scaffold(
-            body: Center(child: Text('No tienes acceso a administracion')),
+        if (profile == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Panel de administracion')),
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'No existe perfil para este usuario en la base de datos actual.',
+                  ),
+                  const SizedBox(height: 8),
+                  SelectableText('user_id: ${user.id}'),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Crea una fila en la tabla profiles con este id y role = admin.',
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => context.go('/home'),
+                    child: const Text('Volver a inicio'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        if (profile.role != 'admin') {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Panel de administracion')),
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('No tienes acceso a administracion en esta base.'),
+                  const SizedBox(height: 8),
+                  Text('Rol actual: ${profile.role}'),
+                  const SizedBox(height: 12),
+                  SelectableText('user_id: ${user.id}'),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Actualiza tu fila en profiles y pon role = admin.',
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => context.go('/home'),
+                    child: const Text('Volver a inicio'),
+                  ),
+                ],
+              ),
+            ),
           );
         }
 
@@ -94,4 +141,3 @@ class _AdminShellScreenState extends ConsumerState<AdminShellScreen> {
     );
   }
 }
-

@@ -56,7 +56,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen> {
           IconButton(
             onPressed: productsAsync.isLoading
                 ? null
-                : () => _showFiltersBottomSheet(context),
+                : _showFiltersBottomSheet,
             icon: const Icon(Icons.tune_rounded),
             tooltip: AppStrings.filtros,
           ),
@@ -298,7 +298,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen> {
     }
   }
 
-  Future<void> _showFiltersBottomSheet(BuildContext context) async {
+  Future<void> _showFiltersBottomSheet() async {
     final products = await ref.read(productsProvider.future);
     if (!mounted) return;
 
@@ -317,15 +317,15 @@ class _StoreScreenState extends ConsumerState<StoreScreen> {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
+      builder: (modalContext) => StatefulBuilder(
+        builder: (modalContext, setModalState) {
           return SafeArea(
             child: Padding(
               padding: EdgeInsets.only(
                 left: 16,
                 right: 16,
                 top: 16,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                bottom: MediaQuery.of(modalContext).viewInsets.bottom + 16,
               ),
               child: SingleChildScrollView(
                 child: Column(
@@ -407,7 +407,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen> {
                                 _selectedSize = null;
                                 _priceRange = const RangeValues(0, 500);
                               });
-                              Navigator.of(context).pop();
+                              Navigator.of(modalContext).pop();
                             },
                             child: const Text(AppStrings.limpiar),
                           ),
@@ -421,7 +421,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen> {
                                 _selectedSize = tempSize;
                                 _priceRange = tempRange;
                               });
-                              Navigator.of(context).pop();
+                              Navigator.of(modalContext).pop();
                             },
                             child: const Text(AppStrings.aplicar),
                           ),
@@ -505,7 +505,7 @@ class _StoreProductCard extends ConsumerWidget {
                       right: 6,
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: IconButton(

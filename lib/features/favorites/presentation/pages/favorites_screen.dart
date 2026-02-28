@@ -34,7 +34,7 @@ class FavoritesScreen extends ConsumerWidget {
                   end: Alignment.bottomRight,
                   colors: [Color(0xFFFFF4CF), Color(0xFFF3D27A)],
                 ),
-                border: Border.all(color: AppTheme.gold.withOpacity(0.55), width: 1.2),
+                border: Border.all(color: AppTheme.gold.withValues(alpha: 0.55), width: 1.2),
                 boxShadow: const [
                   BoxShadow(
                     color: Color(0x22B5483F),
@@ -107,7 +107,7 @@ class FavoritesScreen extends ConsumerWidget {
                       end: Alignment.bottomRight,
                       colors: [Color(0xFFFFF4CF), Color(0xFFF3D27A)],
                     ),
-                    border: Border.all(color: AppTheme.gold.withOpacity(0.55), width: 1.2),
+                    border: Border.all(color: AppTheme.gold.withValues(alpha: 0.55), width: 1.2),
                     boxShadow: const [
                       BoxShadow(
                         color: Color(0x22B5483F),
@@ -245,7 +245,7 @@ class _FavoriteProductCard extends StatelessWidget {
             end: Alignment.bottomRight,
             colors: [Color(0xFFFFF7DE), Color(0xFFF3D07A)],
           ),
-          border: Border.all(color: AppTheme.gold.withOpacity(0.75), width: 1.1),
+          border: Border.all(color: AppTheme.gold.withValues(alpha: 0.75), width: 1.1),
           boxShadow: const [
             BoxShadow(
               color: Color(0x1FB5483F),
@@ -264,7 +264,7 @@ class _FavoriteProductCard extends StatelessWidget {
                     width: 84,
                     height: 84,
                     decoration: BoxDecoration(
-                      border: Border.all(color: AppTheme.gold.withOpacity(0.7), width: 1.1),
+                      border: Border.all(color: AppTheme.gold.withValues(alpha: 0.7), width: 1.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: product.images.isNotEmpty

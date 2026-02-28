@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/design_system/widgets/aurum_card.dart';
@@ -73,7 +73,7 @@ class _AdminEmailsScreenState extends ConsumerState<AdminEmailsScreen> {
                 ),
                 if (_includeCoupon) ...[
                   DropdownButtonFormField<String>(
-                    value: _couponMode,
+                    initialValue: _couponMode,
                     decoration: const InputDecoration(labelText: 'Modo cupon'),
                     items: const [
                       DropdownMenuItem(value: 'generic', child: Text('Generico')),
@@ -83,7 +83,7 @@ class _AdminEmailsScreenState extends ConsumerState<AdminEmailsScreen> {
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: _couponType,
+                    initialValue: _couponType,
                     decoration: const InputDecoration(labelText: 'Tipo descuento'),
                     items: const [
                       DropdownMenuItem(value: 'percent', child: Text('Porcentaje')),

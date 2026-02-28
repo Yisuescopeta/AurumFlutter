@@ -35,7 +35,7 @@ class AdminOrdersScreen extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: DropdownButtonFormField<String>(
-              value: status,
+              initialValue: status,
               decoration: const InputDecoration(labelText: 'Estado'),
               items: orderStatuses
                   .map(

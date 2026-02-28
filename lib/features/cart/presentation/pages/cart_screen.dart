@@ -362,6 +362,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       ref.invalidate(customerOrdersProvider);
 
       await ref.read(cartControllerProvider.notifier).clear();
+      if (!mounted) return;
       _couponController.clear();
 
       ScaffoldMessenger.of(context).showSnackBar(

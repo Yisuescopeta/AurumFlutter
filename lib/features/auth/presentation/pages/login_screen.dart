@@ -1,10 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -57,6 +58,46 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     context.go('/home');
   }
 
+  Future<void> _handleSignUp() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final controller = ref.read(authControllerProvider.notifier);
+
+    await controller.signUp(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+    );
+
+    final state = ref.read(authControllerProvider);
+
+    if (!mounted) return;
+
+    if (state.hasError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo crear la cuenta: ${state.error}'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+      return;
+    }
+
+    final hasSession = Supabase.instance.client.auth.currentSession != null;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          hasSession
+              ? 'Cuenta creada correctamente.'
+              : 'Cuenta creada. Revisa tu correo para confirmar el registro.',
+        ),
+      ),
+    );
+
+    if (hasSession) {
+      context.go('/home');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
@@ -107,7 +148,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     prefixIcon: const Icon(LucideIcons.mail, color: Colors.white70),
                     labelStyle: const TextStyle(color: Colors.white60),
                     enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     focusedBorder: const OutlineInputBorder(
@@ -115,7 +156,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
                     filled: true,
-                    fillColor: Colors.white.withOpacity(0.05),
+                    fillColor: Colors.white.withValues(alpha: 0.05),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -144,7 +185,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     labelStyle: const TextStyle(color: Colors.white60),
                     enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     focusedBorder: const OutlineInputBorder(
@@ -152,7 +193,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
                     filled: true,
-                    fillColor: Colors.white.withOpacity(0.05),
+                    fillColor: Colors.white.withValues(alpha: 0.05),
                   ),
                   validator: (value) {
                     if (value == null || value.length < 6) {
@@ -203,7 +244,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 24),
                 Row(
                   children: [
-                    Expanded(child: Divider(color: Colors.white.withOpacity(0.1))),
+                    Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
@@ -215,7 +256,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ),
                     ),
-                    Expanded(child: Divider(color: Colors.white.withOpacity(0.1))),
+                    Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -238,7 +279,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white,
-                      side: BorderSide(color: Colors.white.withOpacity(0.3)),
+                      side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                     ),
                   ),
                 ),
@@ -251,7 +292,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: GoogleFonts.inter(color: Colors.white70),
                     ),
                     TextButton(
-                      onPressed: () {},
+                      onPressed: isLoading ? null : _handleSignUp,
                       child: Text(
                         AppStrings.crearCuenta,
                         style: GoogleFonts.inter(

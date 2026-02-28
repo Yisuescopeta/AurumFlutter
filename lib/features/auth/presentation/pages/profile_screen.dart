@@ -62,7 +62,7 @@ class ProfileScreen extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: AppTheme.gold.withOpacity(0.12),
+                          color: AppTheme.gold.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -92,6 +92,12 @@ class ProfileScreen extends ConsumerWidget {
                         icon: LucideIcons.heart,
                         title: AppStrings.favoritos,
                         onTap: () => context.push('/favorites'),
+                      ),
+                      const Divider(height: 1),
+                      _buildMenuItem(
+                        icon: LucideIcons.bell,
+                        title: AppStrings.notificaciones,
+                        onTap: () => context.push('/notifications'),
                       ),
                       const Divider(height: 1),
                       _buildMenuItem(

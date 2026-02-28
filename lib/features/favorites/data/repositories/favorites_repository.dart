@@ -7,6 +7,27 @@ class FavoritesRepository {
 
   FavoritesRepository(this._supabase);
 
+  List<String> _normalizeImages(dynamic raw) {
+    if (raw is! List) return const [];
+    return raw
+        .map((e) => e.toString().trim())
+        .where((e) => e.isNotEmpty)
+        .map((value) {
+          if (value.startsWith('http://') || value.startsWith('https://')) {
+            return value;
+          }
+          final normalized = value.startsWith('/') ? value.substring(1) : value;
+          return _supabase.storage.from('product-images').getPublicUrl(normalized);
+        })
+        .toList();
+  }
+
+  Map<String, dynamic> _normalizeProductJson(Map<String, dynamic> input) {
+    final map = Map<String, dynamic>.from(input);
+    map['images'] = _normalizeImages(map['images']);
+    return map;
+  }
+
   Future<Set<String>> getFavoriteProductIds(String userId) async {
     final response = await _supabase
         .from('favorites')
@@ -32,7 +53,7 @@ class FavoritesRepository {
     for (final row in (response as List)) {
       final productData = row['products'];
       if (productData is Map<String, dynamic>) {
-        products.add(Product.fromJson(productData));
+        products.add(Product.fromJson(_normalizeProductJson(productData)));
       } else {
         final orphanId = row['product_id']?.toString();
         if (orphanId != null && orphanId.isNotEmpty) {

@@ -1,10 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/design_system/widgets/aurum_card.dart';
 import '../../../../core/utils/formatters.dart';
 import '../providers/admin_provider.dart';
-import '../../data/repositories/admin_repository.dart';
 
 class AdminCouponsScreen extends ConsumerStatefulWidget {
   const AdminCouponsScreen({super.key});
@@ -50,110 +49,135 @@ class _AdminCouponsScreenState extends ConsumerState<AdminCouponsScreen> {
             ),
           );
         }
-        final coupons = snapshot.data!;
-        return ListView(
+        final coupons = snapshot.data ?? const <Map<String, dynamic>>[];
+        final itemCount = coupons.isEmpty ? 3 : coupons.length + 3;
+
+        return ListView.builder(
           padding: const EdgeInsets.all(16),
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Cupones',
-                    style: Theme.of(context).textTheme.displayMedium,
+          itemCount: itemCount,
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Cupones',
+                      style: Theme.of(context).textTheme.displayMedium,
+                    ),
                   ),
-                ),
-                ElevatedButton.icon(
-                  onPressed: () => _openCouponForm(),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Nuevo'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            AurumCard(
-              child: TextField(
-                controller: _search,
-                decoration: const InputDecoration(
-                  hintText: 'Buscar por codigo',
-                  prefixIcon: Icon(Icons.search),
-                ),
-                onChanged: (v) => setState(() => _query = v.trim()),
-              ),
-            ),
-            const SizedBox(height: 12),
-            if (coupons.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 20),
-                child: Center(child: Text('No hay cupones creados')),
-              ),
-            ...coupons.map((c) {
-              final expRaw = c['expiration_date']?.toString();
-              final exp = expRaw == null ? null : DateTime.tryParse(expRaw);
-              final isPercent = c['discount_type'] == 'percent';
-              final value = c['discount_value']?.toString() ?? '0';
-              final label = isPercent ? '-$value%' : '-EUR$value';
+                  ElevatedButton.icon(
+                    onPressed: () => _openCouponForm(),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Nuevo'),
+                  ),
+                ],
+              );
+            }
+
+            if (index == 1) {
+              return const SizedBox(height: 12);
+            }
+
+            if (index == 2) {
               return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.only(bottom: 12),
                 child: AurumCard(
-                  child: Column(
-                    children: [
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(c['code']?.toString() ?? '-'),
-                        subtitle: Text(
-                          '$label  -  ${c['is_single_use'] == true ? 'Unico' : 'Multiuso'}  -  '
-                          'limite: ${c['usage_limit'] ?? '-'}  -  min: ${c['min_purchase_amount'] ?? 0}',
-                        ),
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(c['is_active'] == true ? 'Activo' : 'Inactivo'),
-                            Text(
-                              exp == null ? 'Sin expiracion' : Formatters.date(exp),
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        alignment: WrapAlignment.end,
-                        children: [
-                          TextButton.icon(
-                            onPressed: () => _openCouponForm(coupon: c),
-                            icon: const Icon(Icons.edit_outlined),
-                            label: const Text('Editar'),
-                          ),
-                          TextButton.icon(
-                            onPressed: () => _toggleActive(c),
-                            icon: Icon(c['is_active'] == true ? Icons.toggle_on : Icons.toggle_off),
-                            label: Text(c['is_active'] == true ? 'Desactivar' : 'Activar'),
-                          ),
-                          TextButton.icon(
-                            onPressed: () => _deleteCoupon(c['id'].toString()),
-                            icon: const Icon(Icons.delete_outline, color: Colors.red),
-                            label: const Text('Borrar', style: TextStyle(color: Colors.red)),
-                          ),
-                        ],
-                      ),
-                    ],
+                  child: TextField(
+                    controller: _search,
+                    decoration: const InputDecoration(
+                      hintText: 'Buscar por codigo',
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                    onChanged: (v) => setState(() => _query = v.trim()),
                   ),
                 ),
               );
-            }),
-          ],
+            }
+
+            if (coupons.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Center(child: Text('No hay cupones creados')),
+              );
+            }
+
+            final c = coupons[index - 3];
+            final expRaw = c['expiration_date']?.toString();
+            final exp = expRaw == null ? null : DateTime.tryParse(expRaw);
+            final isPercent = c['discount_type'] == 'percent';
+            final value = c['discount_value']?.toString() ?? '0';
+            final label = isPercent ? '-$value%' : '-EUR$value';
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: AurumCard(
+                child: Column(
+                  children: [
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(c['code']?.toString() ?? '-'),
+                      subtitle: Text(
+                        '$label  -  ${c['is_single_use'] == true ? 'Unico' : 'Multiuso'}  -  '
+                        'limite: ${c['usage_limit'] ?? '-'}  -  min: ${c['min_purchase_amount'] ?? 0}',
+                      ),
+                      trailing: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(c['is_active'] == true ? 'Activo' : 'Inactivo'),
+                          Text(
+                            exp == null ? 'Sin expiracion' : Formatters.date(exp),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.end,
+                      children: [
+                        TextButton.icon(
+                          onPressed: () => _openCouponForm(coupon: c),
+                          icon: const Icon(Icons.edit_outlined),
+                          label: const Text('Editar'),
+                        ),
+                        TextButton.icon(
+                          onPressed: () => _toggleActive(c),
+                          icon: Icon(c['is_active'] == true ? Icons.toggle_on : Icons.toggle_off),
+                          label: Text(c['is_active'] == true ? 'Desactivar' : 'Activar'),
+                        ),
+                        TextButton.icon(
+                          onPressed: () => _deleteCoupon(c['id']?.toString() ?? ''),
+                          icon: const Icon(Icons.delete_outline, color: Colors.red),
+                          label: const Text('Borrar', style: TextStyle(color: Colors.red)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
     );
   }
 
   Future<void> _toggleActive(Map<String, dynamic> coupon) async {
+    final id = coupon['id']?.toString() ?? '';
+    if (id.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cupon invalido: falta id')),
+      );
+      return;
+    }
+
     try {
       await ref.read(adminRepositoryProvider).updateCoupon(
-            coupon['id'].toString(),
+            id,
             {'is_active': coupon['is_active'] != true},
           );
       if (!mounted) return;
@@ -165,6 +189,13 @@ class _AdminCouponsScreenState extends ConsumerState<AdminCouponsScreen> {
   }
 
   Future<void> _deleteCoupon(String id) async {
+    if (id.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cupon invalido: falta id')),
+      );
+      return;
+    }
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -228,7 +259,7 @@ class _AdminCouponsScreenState extends ConsumerState<AdminCouponsScreen> {
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
-                      value: type,
+                      initialValue: type,
                       decoration: const InputDecoration(labelText: 'Tipo descuento'),
                       items: const [
                         DropdownMenuItem(value: 'percent', child: Text('Porcentaje')),
@@ -310,7 +341,11 @@ class _AdminCouponsScreenState extends ConsumerState<AdminCouponsScreen> {
                             if (coupon == null) {
                               await ref.read(adminRepositoryProvider).createCoupon(payload);
                             } else {
-                              await ref.read(adminRepositoryProvider).updateCoupon(coupon['id'].toString(), payload);
+                              final id = coupon['id']?.toString() ?? '';
+                              if (id.isEmpty) {
+                                throw Exception('Cupon invalido: falta id');
+                              }
+                              await ref.read(adminRepositoryProvider).updateCoupon(id, payload);
                             }
                             if (!context.mounted) return;
                             Navigator.of(context).pop(true);

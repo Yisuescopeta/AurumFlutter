@@ -41,7 +41,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           duration: reduceMotion ? const Duration(milliseconds: 120) : AppMotion.short,
           curve: AppMotion.emphasized,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.97),
+            color: Colors.white.withValues(alpha: 0.97),
             borderRadius: BorderRadius.circular(AppTokens.radiusXl),
             border: Border.all(color: AppTokens.slate100),
             boxShadow: const [
@@ -61,7 +61,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               },
               backgroundColor: Colors.transparent,
               elevation: 0,
-              indicatorColor: AppTheme.gold.withOpacity(0.12),
+              indicatorColor: AppTheme.gold.withValues(alpha: 0.12),
               height: 70,
               destinations: const [
                 NavigationDestination(

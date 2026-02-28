@@ -6,12 +6,14 @@ import '../../features/shared/presentation/pages/main_screen.dart';
 import '../../features/products/presentation/pages/product_detail_screen.dart';
 import '../../features/products/domain/models/product.dart';
 import '../../features/favorites/presentation/pages/favorites_screen.dart';
+import '../../features/notifications/presentation/pages/notifications_screen.dart';
 import '../../features/orders/presentation/pages/orders_screen.dart';
 import '../../features/orders/presentation/pages/order_detail_screen.dart';
 import '../../features/orders/presentation/pages/admin_orders_screen.dart';
 import '../../features/orders/presentation/pages/admin_order_detail_screen.dart';
 import '../../features/admin/presentation/pages/admin_shell_screen.dart';
 import '../../features/admin/presentation/pages/admin_product_form_screen.dart';
+import '../../features/admin/presentation/pages/admin_categories_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -26,6 +28,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/favorites',
       builder: (context, state) => const FavoritesScreen(),
+    ),
+    GoRoute(
+      path: '/notifications',
+      builder: (context, state) => const NotificationsScreen(),
     ),
     GoRoute(
       path: '/orders',
@@ -52,6 +58,10 @@ final appRouter = GoRouter(
         final productId = state.extra as String;
         return AdminProductFormScreen(productId: productId);
       },
+    ),
+    GoRoute(
+      path: '/admin/categories',
+      builder: (context, state) => const AdminCategoriesScreen(),
     ),
     GoRoute(
       path: '/admin/orders',

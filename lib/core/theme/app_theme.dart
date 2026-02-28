@@ -72,13 +72,13 @@ class AppTheme {
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.white,
-        indicatorColor: gold.withOpacity(0.12),
+        indicatorColor: gold.withValues(alpha: 0.12),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        labelTextStyle: MaterialStateProperty.resolveWith(
+        labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => inter.labelSmall?.copyWith(
-            color: states.contains(MaterialState.selected) ? navyBlue : AppTokens.slate600,
-            fontWeight: states.contains(MaterialState.selected) ? FontWeight.w700 : FontWeight.w500,
+            color: states.contains(WidgetState.selected) ? navyBlue : AppTokens.slate600,
+            fontWeight: states.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
       ),
@@ -104,7 +104,8 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: navyBlue,
           foregroundColor: Colors.white,
-          minimumSize: const Size.fromHeight(52),
+          // Keep a consistent minimum height without forcing infinite width in Rows.
+          minimumSize: const Size(0, 52),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppTokens.radiusSm),
           ),
@@ -115,7 +116,7 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: navyBlue,
           side: const BorderSide(color: AppTokens.slate300),
-          minimumSize: const Size.fromHeight(52),
+          minimumSize: const Size(0, 52),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppTokens.radiusSm),
           ),
@@ -131,7 +132,7 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,
-        hintStyle: inter.bodyMedium?.copyWith(color: AppTokens.slate600.withOpacity(0.9)),
+        hintStyle: inter.bodyMedium?.copyWith(color: AppTokens.slate600.withValues(alpha: 0.9)),
         labelStyle: inter.bodyMedium?.copyWith(color: AppTokens.slate600),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppTokens.space16,

@@ -62,7 +62,7 @@ class _AdminOrderDetailScreenState extends ConsumerState<AdminOrderDetailScreen>
                     Text('Estado actual: ${Formatters.orderStatus(order.status)}'),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: _nextStatus,
+                      initialValue: _nextStatus,
                       decoration: const InputDecoration(labelText: 'Nuevo estado'),
                       items: orderStatuses
                           .where((s) => s.isNotEmpty)

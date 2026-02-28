@@ -109,7 +109,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               shape: BoxShape.circle,
                               color: _currentImageIndex == entry.key
                                   ? AppTheme.gold
-                                  : Colors.white.withOpacity(0.5),
+                                  : Colors.white.withValues(alpha: 0.5),
                             ),
                           );
                         }).toList(),

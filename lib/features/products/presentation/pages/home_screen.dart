@@ -1,4 +1,4 @@
-﻿import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +12,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../favorites/presentation/providers/favorites_provider.dart';
+import '../../../notifications/presentation/providers/notifications_provider.dart';
 import '../../domain/models/product.dart';
 import '../providers/product_provider.dart';
 
@@ -22,6 +23,8 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final newArrivalsAsync = ref.watch(newArrivalsProvider);
     final flashOffersAsync = ref.watch(flashOffersProvider);
+    final unreadAsync = ref.watch(unreadNotificationsCountProvider);
+    final unreadCount = unreadAsync.valueOrNull ?? 0;
 
     return Scaffold(
       backgroundColor: AppTheme.lightGrey,
@@ -34,7 +37,37 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
         actions: [
-          IconButton(icon: const Icon(Icons.notifications_outlined), onPressed: () {}),
+          IconButton(
+            onPressed: () => context.push('/notifications'),
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Icon(Icons.notifications_outlined),
+                if (unreadCount > 0)
+                  Positioned(
+                    right: -5,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFB5483F),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      constraints: const BoxConstraints(minWidth: 16, minHeight: 14),
+                      child: Text(
+                        unreadCount > 99 ? '99+' : '$unreadCount',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -62,7 +95,7 @@ class HomeScreen extends ConsumerWidget {
                       height: 180,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: AppTheme.gold.withOpacity(0.18),
+                        color: AppTheme.gold.withValues(alpha: 0.18),
                       ),
                     ),
                   ),
@@ -129,7 +162,7 @@ class HomeScreen extends ConsumerWidget {
                       end: Alignment.bottomRight,
                       colors: [Color(0xFF0E1528), Color(0xFF1F2B47)],
                     ),
-                    border: Border.all(color: AppTheme.gold.withOpacity(0.45), width: 1.2),
+                    border: Border.all(color: AppTheme.gold.withValues(alpha: 0.45), width: 1.2),
                     boxShadow: const [
                       BoxShadow(
                         color: Color(0x28000000),
@@ -208,7 +241,7 @@ class HomeScreen extends ConsumerWidget {
                     end: Alignment.bottomRight,
                     colors: [Color(0xFF0E1528), Color(0xFF1F2B47)],
                   ),
-                  border: Border.all(color: AppTheme.gold.withOpacity(0.45), width: 1.2),
+                  border: Border.all(color: AppTheme.gold.withValues(alpha: 0.45), width: 1.2),
                 ),
                 child: const Center(child: CircularProgressIndicator(color: AppTheme.gold)),
               ),
@@ -282,7 +315,7 @@ class _FlashProductCard extends ConsumerWidget {
         decoration: BoxDecoration(
           color: const Color(0xFF0F1A30),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppTheme.gold.withOpacity(0.35)),
+          border: Border.all(color: AppTheme.gold.withValues(alpha: 0.35)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -596,7 +629,7 @@ class _AurumImagePlaceholder extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppTheme.navyBlue,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.gold.withOpacity(0.8)),
+              border: Border.all(color: AppTheme.gold.withValues(alpha: 0.8)),
             ),
             child: Center(
               child: Text(

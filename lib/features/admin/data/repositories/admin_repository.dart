@@ -1,3 +1,6 @@
+import 'dart:math';
+
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AdminDashboardStats {
@@ -30,6 +33,8 @@ class AdminRepository {
   AdminRepository(this._supabase);
 
   final SupabaseClient _supabase;
+  static const _productImagesBucket = 'product-images';
+  final _random = Random();
 
   List<Map<String, dynamic>> _asMapList(dynamic raw) {
     if (raw is! List) return const [];
@@ -43,6 +48,41 @@ class AdminRepository {
     if (value is int) return value;
     if (value is num) return value.toInt();
     return int.tryParse(value?.toString() ?? '') ?? fallback;
+  }
+
+  String _slugify(String input) {
+    final lowered = input.toLowerCase().trim();
+    final dashed = lowered.replaceAll(RegExp(r'[^a-z0-9]+'), '-');
+    final cleaned = dashed.replaceAll(RegExp(r'-+'), '-');
+    return cleaned.replaceAll(RegExp(r'^-+|-+$'), '');
+  }
+
+  String _randomAlphaNum(int length) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    return List.generate(length, (_) => chars[_random.nextInt(chars.length)])
+        .join();
+  }
+
+  String _extensionOf(String fileName) {
+    final idx = fileName.lastIndexOf('.');
+    if (idx < 0 || idx == fileName.length - 1) return 'jpg';
+    return fileName.substring(idx + 1).toLowerCase();
+  }
+
+  String _contentTypeForExt(String ext) {
+    switch (ext) {
+      case 'png':
+        return 'image/png';
+      case 'webp':
+        return 'image/webp';
+      case 'heic':
+      case 'heif':
+        return 'image/heic';
+      case 'jpg':
+      case 'jpeg':
+      default:
+        return 'image/jpeg';
+    }
   }
 
   Future<AdminDashboardStats> getDashboardStats() async {
@@ -201,6 +241,188 @@ class AdminRepository {
     return map;
   }
 
+  Future<List<Map<String, dynamic>>> getCategories() async {
+    return _asMapList(
+      await _supabase
+          .from('categories')
+          .select('id,name')
+          .order('name', ascending: true)
+          .timeout(const Duration(seconds: 20)),
+    );
+  }
+
+  Future<void> createCategory({
+    required String name,
+    String? slug,
+    String? description,
+    String? imageUrl,
+    bool isActive = true,
+  }) async {
+    final normalizedName = name.trim();
+    final normalizedSlug = (slug == null || slug.trim().isEmpty)
+        ? _slugify(normalizedName)
+        : _slugify(slug);
+
+    if (normalizedName.length < 3) {
+      throw Exception('El nombre debe tener al menos 3 caracteres');
+    }
+    if (normalizedSlug.isEmpty) {
+      throw Exception('El slug no es valido');
+    }
+
+    await _supabase.from('categories').insert({
+      'name': normalizedName,
+      'slug': normalizedSlug,
+      'description': (description == null || description.trim().isEmpty)
+          ? null
+          : description.trim(),
+      'image_url': (imageUrl == null || imageUrl.trim().isEmpty)
+          ? null
+          : imageUrl.trim(),
+      'is_active': isActive,
+    }).timeout(const Duration(seconds: 20));
+  }
+
+  Future<String> generateUniqueSlug(
+    String name, {
+    String? currentProductId,
+  }) async {
+    final base = _slugify(name);
+    if (base.isEmpty) throw Exception('No se pudo generar slug');
+
+    var candidate = base;
+    var suffix = 2;
+    while (true) {
+      final existing = await _supabase
+          .from('products')
+          .select('id')
+          .eq('slug', candidate)
+          .maybeSingle()
+          .timeout(const Duration(seconds: 20));
+      if (existing == null) return candidate;
+      final foundId = existing['id']?.toString();
+      if (currentProductId != null && foundId == currentProductId) {
+        return candidate;
+      }
+      candidate = '$base-$suffix';
+      suffix += 1;
+    }
+  }
+
+  Future<String> generateUniqueSku() async {
+    for (var i = 0; i < 6; i++) {
+      final now = DateTime.now();
+      final y = now.year.toString().padLeft(4, '0');
+      final m = now.month.toString().padLeft(2, '0');
+      final d = now.day.toString().padLeft(2, '0');
+      final candidate = 'AUR-$y$m$d-${_randomAlphaNum(4)}';
+
+      final existing = await _supabase
+          .from('products')
+          .select('id')
+          .eq('sku', candidate)
+          .maybeSingle()
+          .timeout(const Duration(seconds: 20));
+      if (existing == null) return candidate;
+    }
+    throw Exception('No se pudo generar SKU unico');
+  }
+
+  Future<String> createProductBase(Map<String, dynamic> payload) async {
+    final created = await _supabase
+        .from('products')
+        .insert(payload)
+        .select('id')
+        .single()
+        .timeout(const Duration(seconds: 20));
+    return created['id'].toString();
+  }
+
+  Future<void> updateProductCore(
+    String productId,
+    Map<String, dynamic> payload,
+  ) async {
+    await _supabase
+        .from('products')
+        .update(payload)
+        .eq('id', productId)
+        .timeout(const Duration(seconds: 20));
+  }
+
+  Future<void> saveProductImages({
+    required String productId,
+    required List<String> imageUrls,
+  }) async {
+    await _supabase
+        .from('products')
+        .update({'images': imageUrls})
+        .eq('id', productId)
+        .timeout(const Duration(seconds: 20));
+  }
+
+  Future<List<String>> uploadProductImages({
+    required String productId,
+    required List<XFile> files,
+  }) async {
+    if (files.isEmpty) return const [];
+    final storage = _supabase.storage.from(_productImagesBucket);
+    final uploaded = <String>[];
+    for (final file in files) {
+      final bytes = await file.readAsBytes();
+      final ext = _extensionOf(file.name);
+      final ts = DateTime.now().millisecondsSinceEpoch;
+      final path = 'products/$productId/${ts}_${_randomAlphaNum(6)}.$ext';
+      await storage.uploadBinary(
+        path,
+        bytes,
+        fileOptions: FileOptions(
+          upsert: false,
+          contentType: _contentTypeForExt(ext),
+        ),
+      );
+      uploaded.add(storage.getPublicUrl(path));
+    }
+    return uploaded;
+  }
+
+  Future<void> upsertProductVariantsAndStock({
+    required String productId,
+    required List<Map<String, dynamic>> variants,
+  }) async {
+    await _supabase
+        .from('product_variants')
+        .delete()
+        .eq('product_id', productId)
+        .timeout(const Duration(seconds: 20));
+
+    if (variants.isNotEmpty) {
+      final rows = variants
+          .map(
+            (v) => {
+              'product_id': productId,
+              'size': v['size'],
+              'stock': v['stock'],
+              'sku_variant': v['sku_variant'],
+            },
+          )
+          .toList();
+      await _supabase
+          .from('product_variants')
+          .insert(rows)
+          .timeout(const Duration(seconds: 20));
+    }
+
+    final totalStock = variants.fold<int>(
+      0,
+      (sum, v) => sum + _toInt(v['stock']),
+    );
+    await _supabase
+        .from('products')
+        .update({'stock': totalStock})
+        .eq('id', productId)
+        .timeout(const Duration(seconds: 20));
+  }
+
   Future<String> saveProduct({
     String? productId,
     required Map<String, dynamic> productData,
@@ -208,35 +430,12 @@ class AdminRepository {
   }) async {
     late final String id;
     if (productId == null) {
-      final created =
-          await _supabase.from('products').insert(productData).select('id').single();
-      id = created['id'].toString();
+      id = await createProductBase(productData);
     } else {
-      await _supabase.from('products').update(productData).eq('id', productId);
+      await updateProductCore(productId, productData);
       id = productId;
     }
-
-    await _supabase.from('product_variants').delete().eq('product_id', id);
-    if (variants.isNotEmpty) {
-      final rows = variants
-          .map(
-            (v) => {
-              'product_id': id,
-              'size': v['size'],
-              'stock': v['stock'],
-              'sku_variant': v['sku_variant'],
-            },
-          )
-          .toList();
-      await _supabase.from('product_variants').insert(rows);
-    }
-
-    final totalStock = variants.fold<int>(
-      0,
-      (sum, v) => sum + _toInt(v['stock']),
-    );
-    await _supabase.from('products').update({'stock': totalStock}).eq('id', id);
-
+    await upsertProductVariantsAndStock(productId: id, variants: variants);
     return id;
   }
 
@@ -245,6 +444,28 @@ class AdminRepository {
         .from('products')
         .update({'is_active': false})
         .eq('id', productId);
+  }
+
+  Future<void> deleteProductIfNoOrders(String productId) async {
+    final linkedOrderItem = await _supabase
+        .from('order_items')
+        .select('id')
+        .eq('product_id', productId)
+        .limit(1)
+        .maybeSingle()
+        .timeout(const Duration(seconds: 20));
+
+    if (linkedOrderItem != null) {
+      throw Exception(
+        'No se puede eliminar: este producto tiene pedidos asociados.',
+      );
+    }
+
+    await _supabase
+        .from('products')
+        .delete()
+        .eq('id', productId)
+        .timeout(const Duration(seconds: 20));
   }
 
   Future<List<Map<String, dynamic>>> getClients({
@@ -270,18 +491,40 @@ class AdminRepository {
   }
 
   Future<List<Map<String, dynamic>>> getCoupons({String query = ''}) async {
-    final rows = _asMapList(
-      await _supabase
-          .from('coupons')
-          .select()
-          .order('created_at', ascending: false)
-          .timeout(const Duration(seconds: 20)),
-    );
+    List<Map<String, dynamic>> rows;
+    try {
+      rows = _asMapList(
+        await _supabase
+            .from('coupons')
+            .select()
+            .order('created_at', ascending: false)
+            .timeout(const Duration(seconds: 20)),
+      );
+    } on PostgrestException catch (e) {
+      final code = e.code ?? '';
+      final message = e.message.toLowerCase();
+
+      // New/partial DBs might not have this module migrated yet.
+      if (code == '42P01' || message.contains('relation') && message.contains('coupons')) {
+        return const [];
+      }
+
+      // Fallback for schemas without created_at in coupons.
+      if (code == '42703' || message.contains('column') && message.contains('created_at')) {
+        rows = _asMapList(
+          await _supabase
+              .from('coupons')
+              .select()
+              .timeout(const Duration(seconds: 20)),
+        );
+      } else {
+        rethrow;
+      }
+    }
+
     if (query.trim().isEmpty) return rows;
     final q = query.toLowerCase();
-    return rows
-        .where((c) => (c['code']?.toString().toLowerCase() ?? '').contains(q))
-        .toList();
+    return rows.where((c) => (c['code']?.toString().toLowerCase() ?? '').contains(q)).toList();
   }
 
   Future<void> createCoupon(Map<String, dynamic> payload) async {

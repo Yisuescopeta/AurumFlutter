@@ -138,6 +138,7 @@ class OrderDetailScreen extends ConsumerWidget {
     );
 
     if (confirm != true) return;
+    if (!context.mounted) return;
 
     try {
       showDialog(

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -62,7 +62,7 @@ class _SplashScreenState extends State<SplashScreen> {
               style: GoogleFonts.inter(
                 fontSize: 14,
                 letterSpacing: 4,
-                color: AppTheme.gold.withOpacity(0.7),
+                color: AppTheme.gold.withValues(alpha: 0.7),
               ),
             ).animate().fadeIn(delay: 1000.ms, duration: 800.ms),
           ],
