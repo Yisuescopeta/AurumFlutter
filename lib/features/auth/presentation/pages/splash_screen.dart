@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../../../../core/theme/app_theme.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -20,9 +21,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkAuth() async {
-    // Wait for animations and initialization
     await Future.delayed(const Duration(seconds: 3));
-
     if (!mounted) return;
 
     final session = Supabase.instance.client.auth.currentSession;
@@ -41,7 +40,6 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Logo placeholder (Text for now until we have an SVG/Image)
             Text(
               'A',
               style: GoogleFonts.playfairDisplay(
@@ -50,23 +48,17 @@ class _SplashScreenState extends State<SplashScreen> {
                 color: AppTheme.gold,
               ),
             ).animate().fadeIn(duration: 800.ms).scale(delay: 300.ms),
-
             const SizedBox(height: 16),
-
             Text(
-                  'AURUM',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 40,
-                    letterSpacing: 8,
-                    color: AppTheme.gold,
-                  ),
-                )
-                .animate()
-                .fadeIn(delay: 500.ms, duration: 800.ms)
-                .slideY(begin: 0.2, end: 0),
-
+              'AURUM',
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 40,
+                letterSpacing: 8,
+                color: AppTheme.gold,
+              ),
+            ).animate().fadeIn(delay: 500.ms, duration: 800.ms),
             Text(
-              'FASHION MARKET',
+              'MODA MASCULINA',
               style: GoogleFonts.inter(
                 fontSize: 14,
                 letterSpacing: 4,

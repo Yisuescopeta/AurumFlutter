@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+
+import '../../../../core/constants/app_strings.dart';
+import '../../../../core/design_system/widgets/aurum_card.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
@@ -15,26 +18,18 @@ class ProfileScreen extends ConsumerWidget {
     final profileAsync = ref.watch(profileProvider);
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: Text(
-          'Profile',
-          style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
-        ),
-      ),
+      backgroundColor: AppTheme.lightGrey,
+      appBar: AppBar(title: const Text(AppStrings.perfil)),
       body: profileAsync.when(
         data: (profile) {
+          final isAdmin = profile?.role == 'admin';
           return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                // Header Section
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24),
-                  decoration: const BoxDecoration(color: Colors.white),
+                AurumCard(
                   child: Column(
                     children: [
-                      // Avatar
                       Container(
                         width: 100,
                         height: 100,
@@ -59,35 +54,20 @@ class ProfileScreen extends ConsumerWidget {
                       const SizedBox(height: 16),
                       Text(
                         profile?.fullName ?? 'Usuario',
-                        style: GoogleFonts.playfairDisplay(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.navyBlue,
-                        ),
+                        style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        user?.email ?? '',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
+                      Text(user?.email ?? ''),
+                      const SizedBox(height: 10),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: AppTheme.gold.withOpacity(0.1),
+                          color: AppTheme.gold.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          profile?.role == 'admin'
-                              ? 'Administrator'
-                              : 'Customer',
-                          style: GoogleFonts.inter(
+                          isAdmin ? AppStrings.administrador : AppStrings.cliente,
+                          style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: AppTheme.gold,
@@ -97,165 +77,94 @@ class ProfileScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-
-                const SizedBox(height: 16),
-
-                // Menu Items
-                Container(
-                  color: Colors.white,
+                const SizedBox(height: 12),
+                AurumCard(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Column(
                     children: [
                       _buildMenuItem(
-                        context,
-                        icon: LucideIcons.user,
-                        title: 'Edit Profile',
-                        onTap: () {
-                          // TODO: Navigate to edit profile
-                        },
-                      ),
-                      const Divider(height: 1),
-                      _buildMenuItem(
-                        context,
                         icon: LucideIcons.shoppingBag,
-                        title: 'My Orders',
-                        onTap: () {
-                          // TODO: Navigate to orders
-                        },
+                        title: AppStrings.misPedidos,
+                        onTap: () => context.push('/orders'),
                       ),
                       const Divider(height: 1),
                       _buildMenuItem(
-                        context,
                         icon: LucideIcons.heart,
-                        title: 'Favorites',
-                        onTap: () {
-                          // TODO: Navigate to favorites
-                        },
+                        title: AppStrings.favoritos,
+                        onTap: () => context.push('/favorites'),
                       ),
                       const Divider(height: 1),
                       _buildMenuItem(
-                        context,
                         icon: LucideIcons.mapPin,
-                        title: 'Shipping Address',
-                        subtitle: profile?.address ?? 'Not set',
-                        onTap: () {
-                          // TODO: Navigate to address
-                        },
+                        title: AppStrings.direccionEnvio,
+                        subtitle: profile?.address ?? 'No configurada',
+                        onTap: () {},
                       ),
                     ],
                   ),
                 ),
-
-                const SizedBox(height: 16),
-
-                // Settings
-                Container(
-                  color: Colors.white,
-                  child: Column(
-                    children: [
-                      _buildMenuItem(
-                        context,
-                        icon: LucideIcons.bell,
-                        title: 'Notifications',
-                        onTap: () {
-                          // TODO: Navigate to notifications settings
-                        },
-                      ),
-                      const Divider(height: 1),
-                      _buildMenuItem(
-                        context,
-                        icon: LucideIcons.helpCircle,
-                        title: 'Help & Support',
-                        onTap: () {
-                          // TODO: Navigate to help
-                        },
-                      ),
-                      const Divider(height: 1),
-                      _buildMenuItem(
-                        context,
-                        icon: LucideIcons.info,
-                        title: 'About',
-                        onTap: () {
-                          // TODO: Navigate to about
-                        },
-                      ),
-                    ],
+                if (isAdmin) ...[
+                  const SizedBox(height: 12),
+                  AurumCard(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: _buildMenuItem(
+                      icon: LucideIcons.layoutDashboard,
+                      title: AppStrings.panelAdmin,
+                      onTap: () => context.push('/admin'),
+                    ),
                   ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Logout Button
-                Container(
-                  color: Colors.white,
+                ],
+                const SizedBox(height: 12),
+                AurumCard(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
                   child: _buildMenuItem(
-                    context,
                     icon: LucideIcons.logOut,
-                    title: 'Logout',
+                    title: AppStrings.cerrarSesion,
                     titleColor: Colors.red,
                     iconColor: Colors.red,
-                    onTap: () async {
-                      final shouldLogout = await showDialog<bool>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: Text(
-                            'Logout',
-                            style: GoogleFonts.playfairDisplay(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          content: const Text(
-                            'Are you sure you want to logout?',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              child: const Text('Cancel'),
-                            ),
-                            ElevatedButton(
-                              onPressed: () => Navigator.pop(context, true),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                              ),
-                              child: const Text('Logout'),
-                            ),
-                          ],
-                        ),
-                      );
-
-                      if (shouldLogout == true && context.mounted) {
-                        await ref
-                            .read(authControllerProvider.notifier)
-                            .signOut();
-                        if (context.mounted) {
-                          context.go('/login');
-                        }
-                      }
-                    },
+                    onTap: () => _logout(context, ref),
                   ),
                 ),
-
-                const SizedBox(height: 32),
               ],
             ),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: 16),
-              Text('Error loading profile: $error'),
-            ],
-          ),
-        ),
+        error: (error, _) => Center(child: Text('Error al cargar el perfil: $error')),
       ),
     );
   }
 
-  Widget _buildMenuItem(
-    BuildContext context, {
+  Future<void> _logout(BuildContext context, WidgetRef ref) async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          AppStrings.cerrarSesion,
+          style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
+        ),
+        content: const Text(AppStrings.confirmarCerrarSesion),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text(AppStrings.cancelar),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text(AppStrings.cerrarSesion),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout == true && context.mounted) {
+      await ref.read(authControllerProvider.notifier).signOut();
+      if (context.mounted) context.go('/login');
+    }
+  }
+
+  Widget _buildMenuItem({
     required IconData icon,
     required String title,
     String? subtitle,
@@ -278,11 +187,7 @@ class ProfileScreen extends ConsumerWidget {
               style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[600]),
             )
           : null,
-      trailing: Icon(
-        LucideIcons.chevronRight,
-        color: Colors.grey[400],
-        size: 20,
-      ),
+      trailing: Icon(LucideIcons.chevronRight, color: Colors.grey[400], size: 20),
       onTap: onTap,
     );
   }

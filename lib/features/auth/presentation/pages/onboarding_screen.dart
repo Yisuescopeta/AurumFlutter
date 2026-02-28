@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../../../../core/theme/app_theme.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -16,19 +17,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<OnboardingContent> _contents = [
     OnboardingContent(
-      title: "Elegancia Redefinida",
-      description: "Descubre la colección más exclusiva de moda masculina para el hombre moderno.",
-      image: "assets/images/onboarding_1.png", // Start with placeholder path
+      title: 'Elegancia redefinida',
+      description:
+          'Descubre la coleccion mas exclusiva de moda masculina para el hombre moderno.',
     ),
     OnboardingContent(
-      title: "Calidad Premium",
-      description: "Materiales seleccionados y confección artesanal en cada prenda.",
-      image: "assets/images/onboarding_2.png",
+      title: 'Calidad premium',
+      description: 'Materiales seleccionados y confeccion cuidada en cada prenda.',
     ),
     OnboardingContent(
-      title: "Estilo Único",
-      description: "Define tu presencia con piezas que hablan por sí mismas.",
-      image: "assets/images/onboarding_3.png",
+      title: 'Estilo unico',
+      description: 'Define tu presencia con piezas que hablan por si mismas.',
     ),
   ];
 
@@ -38,15 +37,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       backgroundColor: AppTheme.white,
       body: Stack(
         children: [
-          // Background Image Placeholder (or solid color gradient for now)
-          Container(
-            decoration: BoxDecoration(
-              color: AppTheme.navyBlue,
-              // image: DecorationImage(...) // TODO: Add real images
-            ),
-          ),
-          
-          // Overlay gradient for text readability
+          Container(color: AppTheme.navyBlue),
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -61,18 +52,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
           ),
-
-          // Content
           Column(
             children: [
               Expanded(
                 child: PageView.builder(
                   controller: _pageController,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _currentPage = index;
-                    });
-                  },
+                  onPageChanged: (index) => setState(() => _currentPage = index),
                   itemCount: _contents.length,
                   itemBuilder: (context, index) {
                     return Padding(
@@ -99,20 +84,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               height: 1.5,
                             ),
                           ),
-                          const SizedBox(height: 40), // Space for indicators and button
+                          const SizedBox(height: 40),
                         ],
                       ),
                     );
                   },
                 ),
               ),
-              
-              // Bottom Controls
               Padding(
-                padding: const EdgeInsets.all(32.0),
+                padding: const EdgeInsets.all(32),
                 child: Column(
                   children: [
-                    // Indicators
                     Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: List.generate(
@@ -122,22 +104,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           height: 4,
                           width: _currentPage == index ? 24 : 8,
                           decoration: BoxDecoration(
-                            color: _currentPage == index ? AppTheme.gold : Colors.white.withOpacity(0.3),
+                            color: _currentPage == index
+                                ? AppTheme.gold
+                                : Colors.white.withOpacity(0.3),
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
                       ),
                     ),
                     const SizedBox(height: 32),
-                    
-                    // Button
                     SizedBox(
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
                         onPressed: () {
                           if (_currentPage == _contents.length - 1) {
-                            context.go('/login'); // We need to create login route
+                            context.go('/login');
                           } else {
                             _pageController.nextPage(
                               duration: const Duration(milliseconds: 300),
@@ -149,7 +131,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           backgroundColor: AppTheme.gold,
                           foregroundColor: AppTheme.navyBlue,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(0), // Sharp elegant corners
+                            borderRadius: BorderRadius.circular(0),
                           ),
                         ),
                         child: Text(
@@ -174,13 +156,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 }
 
 class OnboardingContent {
+  const OnboardingContent({required this.title, required this.description});
+
   final String title;
   final String description;
-  final String image;
-
-  OnboardingContent({
-    required this.title,
-    required this.description,
-    required this.image,
-  });
 }

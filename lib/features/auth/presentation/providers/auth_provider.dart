@@ -21,7 +21,7 @@ final authStateProvider = StreamProvider<AuthState>((ref) {
 });
 
 // Current User Provider
-final currentUserProvider = StateProvider<User?>((ref) {
+final currentUserProvider = Provider<User?>((ref) {
   final authState = ref.watch(authStateProvider);
   return authState.value?.session?.user;
 });

@@ -1,10 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
+import '../../../../core/constants/app_strings.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 
@@ -19,7 +21,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isLoading = false;
   bool _obscurePassword = true;
 
   @override
@@ -30,59 +31,48 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
-    if (_formKey.currentState!.validate()) {
-      // Logic managed by Riverpod
-      final controller = ref.read(authControllerProvider.notifier);
+    if (!_formKey.currentState!.validate()) return;
 
-      await controller.signIn(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+    final controller = ref.read(authControllerProvider.notifier);
 
-      // Check for errors
-      final state = ref.read(authControllerProvider);
-
-      if (mounted) {
-        if (state.hasError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: ${state.error}'),
-              backgroundColor: AppTheme.error,
-            ),
-          );
-        } else {
-          // On success, we assume auth state change will trigger redirect or we force it here
-          context.go('/home');
-        }
-      }
-    }
-  }
-
-  Future<void> _handleGoogleLogin() async {
-    // TODO: Implement Google Sign In via Supabase Native or Web Auth
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Google Sign-In requires additional platform setup (Firebase/Google Console).',
-        ),
-      ),
+    await controller.signIn(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
     );
+
+    final state = ref.read(authControllerProvider);
+
+    if (!mounted) return;
+
+    if (state.hasError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo iniciar sesion: ${state.error}'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+      return;
+    }
+
+    context.go('/home');
   }
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authControllerProvider);
+    final isLoading = authState.isLoading;
+
     return Scaffold(
       backgroundColor: AppTheme.navyBlue,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(24),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 40),
-                // Logo/Header
                 Center(
                   child: Column(
                     children: [
@@ -96,7 +86,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'WELCOME BACK',
+                        AppStrings.bienvenida.toUpperCase(),
                         style: GoogleFonts.inter(
                           fontSize: 14,
                           letterSpacing: 3,
@@ -107,25 +97,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ],
                   ),
                 ).animate().fadeIn().slideY(begin: -0.2, end: 0),
-
                 const SizedBox(height: 60),
-
-                // Email Field
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
-                    labelText: 'Email Address',
-                    prefixIcon: const Icon(
-                      LucideIcons.mail,
-                      color: Colors.white70,
-                    ),
+                    labelText: AppStrings.correo,
+                    prefixIcon: const Icon(LucideIcons.mail, color: Colors.white70),
                     labelStyle: const TextStyle(color: Colors.white60),
                     enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(
-                        color: Colors.white.withOpacity(0.3),
-                      ),
+                      borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     focusedBorder: const OutlineInputBorder(
@@ -137,41 +119,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
+                      return 'Introduce tu correo';
                     }
                     if (!value.contains('@')) {
-                      return 'Please enter a valid email';
+                      return 'Introduce un correo valido';
                     }
                     return null;
                   },
                 ).animate().fadeIn(delay: 200.ms).slideX(),
-
                 const SizedBox(height: 20),
-
-                // Password Field
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: const Icon(
-                      LucideIcons.lock,
-                      color: Colors.white70,
-                    ),
+                    labelText: AppStrings.contrasena,
+                    prefixIcon: const Icon(LucideIcons.lock, color: Colors.white70),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword ? LucideIcons.eye : LucideIcons.eyeOff,
                         color: Colors.white70,
                       ),
-                      onPressed: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
+                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                     ),
                     labelStyle: const TextStyle(color: Colors.white60),
                     enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(
-                        color: Colors.white.withOpacity(0.3),
-                      ),
+                      borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     focusedBorder: const OutlineInputBorder(
@@ -183,57 +156,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.length < 6) {
-                      return 'Password must be at least 6 characters';
+                      return 'La contrasena debe tener al menos 6 caracteres';
                     }
                     return null;
                   },
                 ).animate().fadeIn(delay: 300.ms).slideX(),
-
                 const SizedBox(height: 12),
-
-                // Forgot Password
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () {
-                      // TODO: Navigate to forgot password
-                    },
+                    onPressed: () {},
                     child: Text(
-                      'Forgot Password?',
-                      style: GoogleFonts.inter(
-                        color: AppTheme.gold,
-                        fontSize: 14,
-                      ),
+                      AppStrings.olvidarContrasena,
+                      style: GoogleFonts.inter(color: AppTheme.gold, fontSize: 14),
                     ),
                   ),
-                ).animate().fadeIn(delay: 400.ms),
-
-                const SizedBox(height: 32),
-
-                // Login Button
+                ),
+                const SizedBox(height: 24),
                 SizedBox(
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _handleLogin,
+                    onPressed: isLoading ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.gold,
                       foregroundColor: AppTheme.navyBlue,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
                     ),
-                    child: _isLoading
+                    child: isLoading
                         ? const SizedBox(
-                            height: 24,
-                            width: 24,
+                            height: 22,
+                            width: 22,
                             child: CircularProgressIndicator(
                               color: AppTheme.navyBlue,
                               strokeWidth: 2.5,
                             ),
                           )
                         : Text(
-                            'SIGN IN',
+                            AppStrings.iniciarSesion.toUpperCase(),
                             style: GoogleFonts.inter(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -241,20 +199,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                           ),
                   ),
-                ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.2, end: 0),
-
+                ),
                 const SizedBox(height: 24),
-
-                // OR Divider
                 Row(
                   children: [
-                    Expanded(
-                      child: Divider(color: Colors.white.withOpacity(0.1)),
-                    ),
+                    Expanded(child: Divider(color: Colors.white.withOpacity(0.1))),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
-                        'OR',
+                        'O',
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           color: Colors.white54,
@@ -262,53 +215,45 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ),
                     ),
-                    Expanded(
-                      child: Divider(color: Colors.white.withOpacity(0.1)),
-                    ),
+                    Expanded(child: Divider(color: Colors.white.withOpacity(0.1))),
                   ],
-                ).animate().fadeIn(delay: 550.ms),
-
+                ),
                 const SizedBox(height: 24),
-
-                // Google Sign In Button
                 SizedBox(
                   height: 56,
                   child: OutlinedButton.icon(
-                    onPressed: _isLoading ? null : _handleGoogleLogin,
+                    onPressed: isLoading
+                        ? null
+                        : () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Google Sign-In requiere configuracion adicional.'),
+                              ),
+                            );
+                          },
                     icon: const Icon(FontAwesomeIcons.google, size: 20),
                     label: Text(
-                      'Sign in with Google',
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      AppStrings.iniciarConGoogle,
+                      style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white,
                       side: BorderSide(color: Colors.white.withOpacity(0.3)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
                     ),
                   ),
-                ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.2, end: 0),
-
-                const SizedBox(height: 32),
-
-                // Sign Up Link
+                ),
+                const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Don\'t have an account? ',
+                      '${AppStrings.sinCuenta} ',
                       style: GoogleFonts.inter(color: Colors.white70),
                     ),
                     TextButton(
-                      onPressed: () {
-                        // TODO: Navigate to register
-                      },
+                      onPressed: () {},
                       child: Text(
-                        'Sign Up',
+                        AppStrings.crearCuenta,
                         style: GoogleFonts.inter(
                           color: AppTheme.gold,
                           fontWeight: FontWeight.bold,
@@ -316,7 +261,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                   ],
-                ).animate().fadeIn(delay: 600.ms),
+                ),
               ],
             ),
           ),
