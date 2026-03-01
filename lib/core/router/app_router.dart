@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../design_system/widgets/aurum_app_bar_title.dart';
 import '../../features/auth/presentation/pages/login_screen.dart';
 import '../../features/auth/presentation/pages/register_screen.dart';
 import '../../features/auth/presentation/pages/onboarding_screen.dart';
@@ -16,6 +17,7 @@ import '../../features/orders/presentation/pages/admin_orders_screen.dart';
 import '../../features/orders/presentation/pages/admin_order_detail_screen.dart';
 import '../../features/admin/presentation/pages/admin_shell_screen.dart';
 import '../../features/admin/presentation/pages/admin_product_form_screen.dart';
+import '../../features/admin/presentation/pages/admin_product_offer_screen.dart';
 import '../../features/admin/presentation/pages/admin_categories_screen.dart';
 
 final appRouter = GoRouter(
@@ -62,10 +64,7 @@ final appRouter = GoRouter(
       path: '/notifications',
       builder: (context, state) => const NotificationsScreen(),
     ),
-    GoRoute(
-      path: '/orders',
-      builder: (context, state) => const OrdersScreen(),
-    ),
+    GoRoute(path: '/orders', builder: (context, state) => const OrdersScreen()),
     GoRoute(
       path: '/order-detail',
       builder: (context, state) {
@@ -96,6 +95,18 @@ final appRouter = GoRouter(
           );
         }
         return AdminProductFormScreen(productId: productId);
+      },
+    ),
+    GoRoute(
+      path: '/admin/products/offer',
+      builder: (context, state) {
+        final productId = _readExtraString(state);
+        if (productId == null) {
+          return const _RouteErrorScreen(
+            message: 'No se pudo abrir la oferta del producto.',
+          );
+        }
+        return AdminProductOfferScreen(productId: productId);
       },
     ),
     GoRoute(
@@ -155,14 +166,11 @@ class _RouteErrorScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Ruta invalida')),
+      appBar: AppBar(title: const AurumAppBarTitle('Ruta invalida')),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Text(
-            message,
-            textAlign: TextAlign.center,
-          ),
+          child: Text(message, textAlign: TextAlign.center),
         ),
       ),
     );

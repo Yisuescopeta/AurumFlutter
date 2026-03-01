@@ -59,12 +59,33 @@ async function onChargeRefunded(charge: Stripe.Charge) {
     typeof charge.payment_intent == 'string' ? charge.payment_intent : null;
   if (!paymentIntentId) return;
 
-  await supabaseAdmin
-    .from('orders')
-    .update({
-      status: 'refunded',
-      refund_status: 'completed',
-      refunded_at: new Date().toISOString(),
-    })
-    .eq('payment_intent_id', paymentIntentId);
+    const updated = await supabaseAdmin
+        .from('orders')
+        .update({
+            status: 'refunded',
+            refund_status: 'completed',
+            refunded_at: new Date().toISOString(),
+        })
+        .eq('payment_intent_id', paymentIntentId)
+        .select('id');
+
+    if (updated.data && updated.data.length > 0) {
+        const orderId = updated.data[0].id;
+        const { data: items } = await supabaseAdmin
+            .from('order_items')
+            .select('product_id, size, quantity')
+            .eq('order_id', orderId);
+
+        if (items && items.length > 0) {
+            for (const item of items) {
+                if (item.product_id && item.size && item.quantity) {
+                    await supabaseAdmin.rpc('increment_variant_stock', {
+                        p_product_id: item.product_id,
+                        p_size: item.size,
+                        p_quantity: item.quantity,
+                    });
+                }
+            }
+        }
+    }
 }

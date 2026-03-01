@@ -5,9 +5,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/design_system/widgets/aurum_app_bar_title.dart';
 import '../../../../core/design_system/widgets/aurum_card.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../../core/design_system/widgets/aurum_loader.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -19,7 +21,7 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppTheme.lightGrey,
-      appBar: AppBar(title: const Text(AppStrings.perfil)),
+      appBar: AppBar(title: const AurumAppBarTitle(AppStrings.perfil)),
       body: profileAsync.when(
         data: (profile) {
           final isAdmin = profile?.role == 'admin';
@@ -60,13 +62,18 @@ class ProfileScreen extends ConsumerWidget {
                       Text(user?.email ?? ''),
                       const SizedBox(height: 10),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: AppTheme.gold.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          isAdmin ? AppStrings.administrador : AppStrings.cliente,
+                          isAdmin
+                              ? AppStrings.administrador
+                              : AppStrings.cliente,
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -135,8 +142,9 @@ class ProfileScreen extends ConsumerWidget {
             ),
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('Error al cargar el perfil: $error')),
+        loading: () => const AurumCenteredLoader(),
+        error: (error, _) =>
+            Center(child: Text('Error al cargar el perfil: $error')),
       ),
     );
   }
@@ -193,7 +201,11 @@ class ProfileScreen extends ConsumerWidget {
               style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[600]),
             )
           : null,
-      trailing: Icon(LucideIcons.chevronRight, color: Colors.grey[400], size: 20),
+      trailing: Icon(
+        LucideIcons.chevronRight,
+        color: Colors.grey[400],
+        size: 20,
+      ),
       onTap: onTap,
     );
   }

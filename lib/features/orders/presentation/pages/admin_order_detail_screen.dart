@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/design_system/widgets/aurum_app_bar_title.dart';
 import '../../../../core/design_system/widgets/aurum_card.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../providers/orders_provider.dart';
+import '../../../../core/design_system/widgets/aurum_loader.dart';
 
 class AdminOrderDetailScreen extends ConsumerStatefulWidget {
   const AdminOrderDetailScreen({super.key, required this.orderId});
@@ -13,10 +15,12 @@ class AdminOrderDetailScreen extends ConsumerStatefulWidget {
   final String orderId;
 
   @override
-  ConsumerState<AdminOrderDetailScreen> createState() => _AdminOrderDetailScreenState();
+  ConsumerState<AdminOrderDetailScreen> createState() =>
+      _AdminOrderDetailScreenState();
 }
 
-class _AdminOrderDetailScreenState extends ConsumerState<AdminOrderDetailScreen> {
+class _AdminOrderDetailScreenState
+    extends ConsumerState<AdminOrderDetailScreen> {
   final _carrierController = TextEditingController();
   final _trackingController = TextEditingController();
   String _nextStatus = '';
@@ -35,12 +39,13 @@ class _AdminOrderDetailScreenState extends ConsumerState<AdminOrderDetailScreen>
 
     return Scaffold(
       backgroundColor: AppTheme.lightGrey,
-      appBar: AppBar(title: const Text('Gestionar pedido')),
+      appBar: AppBar(title: const AurumAppBarTitle('Gestionar pedido')),
       body: detailAsync.when(
         data: (detail) {
           final order = detail.order;
-          _carrierController.text =
-              _carrierController.text.isEmpty ? (order.carrier ?? '') : _carrierController.text;
+          _carrierController.text = _carrierController.text.isEmpty
+              ? (order.carrier ?? '')
+              : _carrierController.text;
           _trackingController.text = _trackingController.text.isEmpty
               ? (order.trackingNumber ?? '')
               : _trackingController.text;
@@ -59,11 +64,15 @@ class _AdminOrderDetailScreenState extends ConsumerState<AdminOrderDetailScreen>
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 6),
-                    Text('Estado actual: ${Formatters.orderStatus(order.status)}'),
+                    Text(
+                      'Estado actual: ${Formatters.orderStatus(order.status)}',
+                    ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       initialValue: _nextStatus,
-                      decoration: const InputDecoration(labelText: 'Nuevo estado'),
+                      decoration: const InputDecoration(
+                        labelText: 'Nuevo estado',
+                      ),
                       items: orderStatuses
                           .where((s) => s.isNotEmpty)
                           .map(
@@ -73,7 +82,8 @@ class _AdminOrderDetailScreenState extends ConsumerState<AdminOrderDetailScreen>
                             ),
                           )
                           .toList(),
-                      onChanged: (value) => setState(() => _nextStatus = value ?? order.status),
+                      onChanged: (value) =>
+                          setState(() => _nextStatus = value ?? order.status),
                     ),
                     const SizedBox(height: 10),
                     ElevatedButton(
@@ -89,12 +99,16 @@ class _AdminOrderDetailScreenState extends ConsumerState<AdminOrderDetailScreen>
                   children: [
                     TextField(
                       controller: _carrierController,
-                      decoration: const InputDecoration(labelText: AppStrings.transportista),
+                      decoration: const InputDecoration(
+                        labelText: AppStrings.transportista,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _trackingController,
-                      decoration: const InputDecoration(labelText: AppStrings.numeroSeguimiento),
+                      decoration: const InputDecoration(
+                        labelText: AppStrings.numeroSeguimiento,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     ListTile(
@@ -128,7 +142,7 @@ class _AdminOrderDetailScreenState extends ConsumerState<AdminOrderDetailScreen>
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const AurumCenteredLoader(),
         error: (error, _) => Center(child: Text('Error: $error')),
       ),
     );
@@ -136,16 +150,18 @@ class _AdminOrderDetailScreenState extends ConsumerState<AdminOrderDetailScreen>
 
   Future<void> _updateStatus(String currentStatus) async {
     try {
-      await ref.read(adminOrderControllerProvider.notifier).updateStatus(
+      await ref
+          .read(adminOrderControllerProvider.notifier)
+          .updateStatus(
             orderId: widget.orderId,
             currentStatus: currentStatus,
             nextStatus: _nextStatus,
           );
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Estado actualizado')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Estado actualizado')));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -156,7 +172,9 @@ class _AdminOrderDetailScreenState extends ConsumerState<AdminOrderDetailScreen>
 
   Future<void> _updateTracking() async {
     try {
-      await ref.read(adminOrderControllerProvider.notifier).updateTracking(
+      await ref
+          .read(adminOrderControllerProvider.notifier)
+          .updateTracking(
             orderId: widget.orderId,
             carrier: _carrierController.text.trim(),
             trackingNumber: _trackingController.text.trim(),

@@ -2,6 +2,43 @@ import { corsHeaders, jsonResponse } from '../_shared/cors.ts';
 import { supabaseAdmin } from '../_shared/supabaseAdmin.ts';
 import { stripe } from '../_shared/stripe.ts';
 
+function mapStripeRefundStatus(status: string | null | undefined): 'pending' | 'completed' | 'failed' {
+    if (status === 'succeeded') return 'completed';
+    if (status === 'pending') return 'pending';
+    return 'failed';
+}
+
+function computeRefundRule(status: string, totalAmount: number, shippingCost: number) {
+    if (status === 'paid') {
+        return {
+            refundAmount: totalAmount,
+            shippingRefunded: true,
+            finalStatus: 'refunded',
+            userMessage: 'Reembolso completo (incluye envio).',
+        } as const;
+    }
+
+    if (status === 'confirmed' || status === 'processing' || status === 'shipped') {
+        return {
+            refundAmount: totalAmount - shippingCost,
+            shippingRefunded: false,
+            finalStatus: 'cancelled',
+            userMessage: 'Pedido cancelado con reembolso sin gastos de envio.',
+        } as const;
+    }
+
+    if (status === 'delivered') {
+        return {
+            refundAmount: totalAmount - shippingCost,
+            shippingRefunded: false,
+            finalStatus: 'returned',
+            userMessage: 'Pedido devuelto con reembolso sin gastos de envio.',
+        } as const;
+    }
+
+    return null;
+}
+
 Deno.serve(async (req: Request) => {
     if (req.method == 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders });
@@ -49,7 +86,10 @@ Deno.serve(async (req: Request) => {
             return jsonResponse({ error: 'Unauthorized to refund this order' }, 403);
         }
 
-        if (order.status !== 'paid' && order.status !== 'delivered') {
+        const totalAmount = Number(order.total_amount ?? 0);
+        const shippingCost = Number(order.shipping_cost ?? 0);
+        const rule = computeRefundRule(order.status, totalAmount, shippingCost);
+        if (!rule) {
             return jsonResponse({ error: 'Order cannot be refunded' }, 400);
         }
 
@@ -57,32 +97,30 @@ Deno.serve(async (req: Request) => {
             return jsonResponse({ error: 'Cannot refund order without payment intent' }, 400);
         }
 
-        const refundAmount = order.total_amount - order.shipping_cost;
-
+        const refundAmount = rule.refundAmount;
         if (refundAmount <= 0) {
             return jsonResponse({ error: 'Nothing to refund' }, 400);
         }
 
-        const refundParams = {
+        const stripeRefund = await stripe.refunds.create({
             payment_intent: order.payment_intent_id,
             amount: refundAmount,
-        };
-
-        const stripeRefund = await stripe.refunds.create(refundParams);
+        });
 
         await supabaseAdmin
             .from('orders')
             .update({
-                status: 'refunded',
-                refund_status: stripeRefund.status,
+                status: rule.finalStatus,
+                refund_status: mapStripeRefundStatus(stripeRefund.status),
                 refunded_at: new Date().toISOString(),
+                cancelled_at: rule.finalStatus === 'cancelled' ? new Date().toISOString() : null,
             })
             .eq('id', orderId);
 
         await supabaseAdmin.from('order_status_history').insert({
             order_id: order.id,
-            status: 'refunded',
-            notes: `Devolución solicitada por el usuario. Importe: ${(refundAmount / 100).toFixed(2)}€`,
+            status: rule.finalStatus,
+            notes: `${rule.userMessage} Importe: ${(refundAmount / 100).toFixed(2)} EUR`,
             created_by: user.id,
         });
 
@@ -103,7 +141,13 @@ Deno.serve(async (req: Request) => {
             }
         }
 
-        return jsonResponse({ success: true, refund: stripeRefund.id });
+        return jsonResponse({
+            success: true,
+            refund: stripeRefund.id,
+            refund_amount: refundAmount,
+            shipping_refunded: rule.shippingRefunded,
+            final_status: rule.finalStatus,
+        });
     } catch (error) {
         console.error('[refund-order] error', error);
         const details = error instanceof Error ? error.message : String(error);

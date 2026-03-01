@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/design_system/widgets/aurum_app_bar_title.dart';
 import '../../../../core/design_system/widgets/aurum_card.dart';
 import '../../../../core/design_system/widgets/aurum_empty_state.dart';
 import '../../../../core/services/checkout_service.dart';
@@ -16,6 +17,7 @@ import '../../../orders/presentation/providers/orders_provider.dart';
 import '../../data/repositories/cart_stock_repository.dart';
 import '../../data/repositories/coupon_repository.dart';
 import '../providers/cart_provider.dart';
+import '../../../../core/design_system/widgets/aurum_loader.dart';
 
 final couponRepositoryProvider = Provider<CouponRepository>((ref) {
   return CouponRepository(Supabase.instance.client);
@@ -79,12 +81,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.lightGrey,
-      appBar: AppBar(
-        title: Text(
-          AppStrings.carrito,
-          style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
-        ),
-      ),
+      appBar: AppBar(title: const AurumAppBarTitle(AppStrings.carrito)),
       body: cart.items.isEmpty
           ? AurumEmptyState(
               icon: Icons.shopping_bag_outlined,
@@ -119,7 +116,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                     child: ElevatedButton(
                       onPressed: cart.isLoading ? null : _handleCheckout,
                       child: cart.isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
+                          ? const AurumLoader(color: Colors.white)
                           : const Text(AppStrings.continuarPago),
                     ),
                   ),
@@ -376,32 +373,12 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         couponCode: cart.couponCode,
       );
 
-      var orderReady = await CheckoutService.instance.waitForOrderCreation(
-        result.paymentIntentId,
-      );
-      if (!orderReady) {
-        final confirmed = await CheckoutService.instance
-            .confirmOrderFromPaymentIntent(result.paymentIntentId);
-        if (confirmed) {
-          orderReady = await CheckoutService.instance.waitForOrderCreation(
-            result.paymentIntentId,
-            timeout: const Duration(seconds: 15),
-            pollEvery: const Duration(seconds: 2),
-          );
-        } else {
-          orderReady = await CheckoutService.instance.waitForOrderCreation(
-            result.paymentIntentId,
-            timeout: const Duration(seconds: 20),
-            pollEvery: const Duration(seconds: 2),
-          );
-        }
-      }
-
-      if (!orderReady) {
-        throw Exception(
-          'El pago se ha enviado, pero el pedido aun no se ha confirmado. '
-          'No se vaciara tu carrito hasta que aparezca en Mis pedidos.',
+      try {
+        await CheckoutService.instance.confirmOrderAfterPayment(
+          result.paymentIntentId,
         );
+      } on OrderConfirmationDeferredException {
+        // Payment already succeeded in Stripe. Do not block UX waiting for DB sync.
       }
 
       if (!mounted) return;

@@ -5,12 +5,14 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/design_system/widgets/aurum_app_bar_title.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../favorites/presentation/providers/favorites_provider.dart';
 import '../../../products/domain/models/product.dart';
 import '../../../products/presentation/providers/product_provider.dart';
+import '../../../../core/design_system/widgets/aurum_loader.dart';
 
 enum _SortBy { newest, priceAsc, priceDesc }
 
@@ -41,10 +43,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F5EF),
       appBar: AppBar(
-        title: Text(
-          AppStrings.tienda,
-          style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
-        ),
+        title: const AurumAppBarTitle(AppStrings.tienda),
         actions: [
           IconButton(
             onPressed: productsAsync.isLoading
@@ -193,7 +192,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen> {
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const AurumCenteredLoader(),
         error: (err, _) => Center(child: Text('Error: $err')),
       ),
     );
@@ -494,7 +493,7 @@ class _StoreProductCard extends ConsumerWidget {
                           child: SizedBox(
                             width: 18,
                             height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: AurumLoader(strokeWidth: 2),
                           ),
                         ),
                         errorWidget: (_, __, ___) => const Center(

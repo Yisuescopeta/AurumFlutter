@@ -5,10 +5,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../application/services/order_invoice_pdf_service.dart';
 import '../../domain/models/order.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/design_system/widgets/aurum_app_bar_title.dart';
 import '../../../../core/design_system/widgets/aurum_card.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../providers/orders_provider.dart';
+import '../../../../core/design_system/widgets/aurum_loader.dart';
 
 class OrderDetailScreen extends ConsumerStatefulWidget {
   const OrderDetailScreen({super.key, required this.orderId});
@@ -29,7 +31,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.lightGrey,
-      appBar: AppBar(title: const Text('Detalle de pedido')),
+      appBar: AppBar(title: const AurumAppBarTitle('Detalle de pedido')),
       body: detailAsync.when(
         data: (detail) {
           final order = detail.order;
@@ -41,9 +43,15 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('${AppStrings.estado}: ${Formatters.orderStatus(order.status)}'),
-                    Text('Subtotal: ${Formatters.euro((order.totalAmount - order.shippingCost) / 100)}'),
-                    Text('Gastos de envio: ${Formatters.euro(order.shippingCost / 100)}'),
+                    Text(
+                      '${AppStrings.estado}: ${Formatters.orderStatus(order.status)}',
+                    ),
+                    Text(
+                      'Subtotal: ${Formatters.euro((order.totalAmount - order.shippingCost) / 100)}',
+                    ),
+                    Text(
+                      'Gastos de envio: ${Formatters.euro(order.shippingCost / 100)}',
+                    ),
                     Text(
                       '${AppStrings.total}: ${Formatters.euro(order.totalAmount / 100)}',
                       style: const TextStyle(fontWeight: FontWeight.bold),
@@ -63,7 +71,9 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                     if ((order.carrier ?? '').isNotEmpty)
                       Text('${AppStrings.transportista}: ${order.carrier}'),
                     if ((order.trackingNumber ?? '').isNotEmpty)
-                      Text('${AppStrings.numeroSeguimiento}: ${order.trackingNumber}'),
+                      Text(
+                        '${AppStrings.numeroSeguimiento}: ${order.trackingNumber}',
+                      ),
                     Text(
                       '${AppStrings.entregaEstimada}: ${Formatters.date(order.estimatedDelivery)}',
                     ),
@@ -79,7 +89,9 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                         (item) => ListTile(
                           contentPadding: EdgeInsets.zero,
                           title: Text(item.productName),
-                          subtitle: Text('Cantidad: ${item.quantity} | Talla: ${item.size ?? '-'}'),
+                          subtitle: Text(
+                            'Cantidad: ${item.quantity} | Talla: ${item.size ?? '-'}',
+                          ),
                           trailing: Text(
                             Formatters.euro(item.priceAtPurchase / 100),
                             style: const TextStyle(color: AppTheme.gold),
@@ -119,7 +131,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: AurumLoader(strokeWidth: 2),
                               )
                             : const Icon(Icons.download_outlined),
                         label: Text(
@@ -141,7 +153,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                               ? const SizedBox(
                                   width: 16,
                                   height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: AurumLoader(strokeWidth: 2),
                                 )
                               : const Icon(Icons.assignment_return_outlined),
                           label: Text(
@@ -155,22 +167,23 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                   ],
                 ),
               ),
-              if (order.status == 'paid' || order.status == 'delivered') ...[
+              if (_canRequestRefund(order.status)) ...[
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: () => _refundOrder(context, order.id),
+                  onPressed: () =>
+                      _refundOrder(context, order.id, order.status),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red.shade100,
                     foregroundColor: Colors.red.shade900,
                   ),
-                  child: const Text('Devolver Pedido'),
+                  child: Text(_refundButtonLabel(order.status)),
                 ),
                 const SizedBox(height: 24),
               ],
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const AurumCenteredLoader(),
         error: (error, _) => Center(child: Text('Error: $error')),
       ),
     );
@@ -205,21 +218,49 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo generar la factura de devolucion: $e')),
+        SnackBar(
+          content: Text('No se pudo generar la factura de devolucion: $e'),
+        ),
       );
     } finally {
       if (mounted) setState(() => _creatingRefundInvoice = false);
     }
   }
 
-  Future<void> _refundOrder(BuildContext context, String orderId) async {
+  bool _canRequestRefund(String status) {
+    return status == 'paid' ||
+        status == 'confirmed' ||
+        status == 'processing' ||
+        status == 'shipped' ||
+        status == 'delivered';
+  }
+
+  String _refundButtonLabel(String status) {
+    if (status == 'confirmed' ||
+        status == 'processing' ||
+        status == 'shipped') {
+      return 'Cancelar pedido';
+    }
+    return 'Devolver pedido';
+  }
+
+  String _refundDialogMessage(String status) {
+    if (status == 'paid') {
+      return 'Seguro que deseas continuar? Se devolvera el importe completo, incluidos los gastos de envio.';
+    }
+    return 'Seguro que deseas continuar? Se devolvera el importe de los productos, pero los gastos de envio no son reembolsables.';
+  }
+
+  Future<void> _refundOrder(
+    BuildContext context,
+    String orderId,
+    String currentStatus,
+  ) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Confirmar Devolucion'),
-        content: const Text(
-          'Seguro que deseas devolver este pedido? Se devolvera el importe de los productos, pero los gastos de envio no son reembolsables.',
-        ),
+        content: Text(_refundDialogMessage(currentStatus)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -228,7 +269,10 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Devolver', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Devolver',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -241,7 +285,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (_) => const Center(child: CircularProgressIndicator()),
+        builder: (_) => const AurumCenteredLoader(),
       );
 
       final response = await Supabase.instance.client.functions.invoke(
@@ -255,10 +299,25 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         throw Exception('Error al devolver el pedido. ${response.data}');
       }
 
+      final payload = response.data is Map
+          ? Map<String, dynamic>.from(response.data as Map)
+          : <String, dynamic>{};
+      final finalStatus = payload['final_status']?.toString() ?? '';
+
+      String message = 'Pedido devuelto correctamente';
+      if (finalStatus == 'cancelled') {
+        message = 'Pedido cancelado y reembolsado (sin gastos de envio).';
+      } else if (finalStatus == 'returned') {
+        message =
+            'Pedido marcado como devuelto y reembolsado (sin gastos de envio).';
+      } else if (finalStatus == 'refunded') {
+        message = 'Pedido reembolsado completamente.';
+      }
+
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Pedido devuelto correctamente')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
       }
 
       ref.invalidate(orderDetailProvider(orderId));

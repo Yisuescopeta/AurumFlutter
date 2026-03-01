@@ -26,6 +26,14 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<bool> signInWithGoogle({required String redirectTo}) async {
+    return await _supabase.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: redirectTo,
+    );
+  }
+
+  @override
   Future<void> signOut() async {
     await _supabase.auth.signOut();
   }

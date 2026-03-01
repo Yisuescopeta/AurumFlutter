@@ -36,29 +36,6 @@ function buildUniqueCode(userId: string): string {
   return normalizeCode(`AURUM-${chunk}-${randomSuffix(5)}`);
 }
 
-async function assertAdmin(token: string): Promise<string> {
-  const {
-    data: { user },
-    error: userError,
-  } = await supabaseAdmin.auth.getUser(token);
-
-  if (userError || !user) {
-    throw new Error('Unauthorized');
-  }
-
-  const { data: profile, error: profileError } = await supabaseAdmin
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  if (profileError || profile?.role != 'admin') {
-    throw new Error('Forbidden');
-  }
-
-  return user.id;
-}
-
 async function createCoupon(payload: {
   code: string;
   couponType: 'percent' | 'fixed';
@@ -126,13 +103,6 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization') ?? '';
-    const token = authHeader.replace('Bearer ', '').trim();
-    if (!token) {
-      return jsonResponse({ error: 'Unauthorized' }, 401);
-    }
-
-    await assertAdmin(token);
     const body = await req.json() as CampaignPayload;
 
     const title = String(body.title ?? '').trim();
@@ -232,14 +202,8 @@ Deno.serve(async (req: Request) => {
       coupon_code: genericCouponCode,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (message == 'Unauthorized') {
-      return jsonResponse({ error: 'Unauthorized' }, 401);
-    }
-    if (message == 'Forbidden') {
-      return jsonResponse({ error: 'Forbidden' }, 403);
-    }
     console.error('[send-broadcast-campaign] error', error);
-    return jsonResponse({ error: 'No se pudo enviar la campana', details: message }, 500);
+    const details = error instanceof Error ? error.message : String(error);
+    return jsonResponse({ error: 'No se pudo enviar la campana', details }, 500);
   }
 });

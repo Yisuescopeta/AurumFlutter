@@ -8,6 +8,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
+import '../../../../core/design_system/widgets/aurum_loader.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -33,7 +34,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Revisa correo y contrasena para continuar.')),
+        const SnackBar(
+          content: Text('Revisa correo y contrasena para continuar.'),
+        ),
       );
       return;
     }
@@ -59,7 +62,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Cuenta creada. Revisa tu correo para confirmar el registro.'),
+        content: Text(
+          'Cuenta creada. Revisa tu correo para confirmar el registro.',
+        ),
       ),
     );
     context.go('/login');
@@ -114,10 +119,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     labelText: AppStrings.correo,
-                    prefixIcon: const Icon(LucideIcons.mail, color: Colors.white70),
+                    prefixIcon: const Icon(
+                      LucideIcons.mail,
+                      color: Colors.white70,
+                    ),
                     labelStyle: const TextStyle(color: Colors.white60),
                     enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                      borderSide: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.3),
+                      ),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     focusedBorder: const OutlineInputBorder(
@@ -144,17 +154,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     labelText: AppStrings.contrasena,
-                    prefixIcon: const Icon(LucideIcons.lock, color: Colors.white70),
+                    prefixIcon: const Icon(
+                      LucideIcons.lock,
+                      color: Colors.white70,
+                    ),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword ? LucideIcons.eye : LucideIcons.eyeOff,
                         color: Colors.white70,
                       ),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                     ),
                     labelStyle: const TextStyle(color: Colors.white60),
                     enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                      borderSide: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.3),
+                      ),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     focusedBorder: const OutlineInputBorder(
@@ -184,7 +200,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         ? const SizedBox(
                             height: 22,
                             width: 22,
-                            child: CircularProgressIndicator(
+                            child: AurumLoader(
                               color: AppTheme.navyBlue,
                               strokeWidth: 2.5,
                             ),

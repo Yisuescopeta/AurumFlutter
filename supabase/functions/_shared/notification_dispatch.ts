@@ -183,6 +183,8 @@ async function getActiveDeviceTokens(userId: string): Promise<string[]> {
 export async function createAndDispatchNotification(
   input: DispatchInput,
 ): Promise<DispatchResult> {
+  const isAdminBroadcast = input.type === 'admin_broadcast';
+
   const existing = await supabaseAdmin
     .from('notification_dispatch_log')
     .select('id')
@@ -196,7 +198,7 @@ export async function createAndDispatchNotification(
 
   try {
     const preferences = await getPreferences(input.userId);
-    if (!preferences.enabled) {
+    if (!isAdminBroadcast && !preferences.enabled) {
       await logDispatch({
         userId: input.userId,
         type: input.type,
@@ -233,7 +235,7 @@ export async function createAndDispatchNotification(
       return { sent: false, status: 'skipped_disabled' };
     }
 
-    if (isInQuietHours(preferences)) {
+    if (!isAdminBroadcast && isInQuietHours(preferences)) {
       await logDispatch({
         userId: input.userId,
         type: input.type,
@@ -248,8 +250,8 @@ export async function createAndDispatchNotification(
       return { sent: false, status: 'skipped_quiet_hours' };
     }
 
-    const sentToday = await getTodaySentCount(input.userId);
-    if (sentToday >= DAILY_CAP) {
+    const sentToday = isAdminBroadcast ? 0 : await getTodaySentCount(input.userId);
+    if (!isAdminBroadcast && sentToday >= DAILY_CAP) {
       await logDispatch({
         userId: input.userId,
         type: input.type,

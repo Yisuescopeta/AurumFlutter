@@ -9,35 +9,15 @@ type BroadcastPayload = {
   body?: string;
   route?: string;
   product_id?: string | null;
+  coupon_id?: string | null;
+  coupon_code?: string | null;
+  include_admins?: boolean;
 };
 
 function normalizeRoute(input: unknown): string {
   const value = String(input ?? '').trim();
   if (!value) return '/notifications';
   return value.startsWith('/') ? value : '/notifications';
-}
-
-async function assertAdmin(token: string): Promise<string> {
-  const {
-    data: { user },
-    error: userError,
-  } = await supabaseAdmin.auth.getUser(token);
-
-  if (userError || !user) {
-    throw new Error('Unauthorized');
-  }
-
-  const { data: profile, error: profileError } = await supabaseAdmin
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  if (profileError || profile?.role != 'admin') {
-    throw new Error('Forbidden');
-  }
-
-  return user.id;
 }
 
 Deno.serve(async (req: Request) => {
@@ -49,28 +29,30 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization') ?? '';
-    const token = authHeader.replace('Bearer ', '').trim();
-    if (!token) {
-      return jsonResponse({ error: 'Unauthorized' }, 401);
-    }
-
-    const adminId = await assertAdmin(token);
+    const adminId = 'system_admin_broadcast';
     const body = await req.json() as BroadcastPayload;
 
     const title = String(body.title ?? '').trim();
     const message = String(body.body ?? '').trim();
     const route = normalizeRoute(body.route);
     const productId = body.product_id ? String(body.product_id).trim() : null;
+    const couponId = body.coupon_id ? String(body.coupon_id).trim() : null;
+    const couponCode = body.coupon_code ? String(body.coupon_code).trim() : null;
+    const includeAdmins = body.include_admins !== false;
 
     if (!title || !message) {
       return jsonResponse({ error: 'title and body are required' }, 400);
     }
 
-    const { data: recipients, error: recipientsError } = await supabaseAdmin
+    let recipientsQuery = supabaseAdmin
       .from('profiles')
-      .select('id')
-      .neq('role', 'admin');
+      .select('id');
+
+    if (!includeAdmins) {
+      recipientsQuery = recipientsQuery.neq('role', 'admin');
+    }
+
+    const { data: recipients, error: recipientsError } = await recipientsQuery;
 
     if (recipientsError || !recipients) {
       return jsonResponse({ error: 'No se pudieron cargar destinatarios' }, 500);
@@ -97,6 +79,8 @@ Deno.serve(async (req: Request) => {
           route,
           type: 'admin_broadcast',
           admin_id: adminId,
+          coupon_id: couponId,
+          coupon_code: couponCode,
         },
       });
 
@@ -118,16 +102,11 @@ Deno.serve(async (req: Request) => {
       skipped,
       duplicates,
       failed,
+      include_admins: includeAdmins,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (message == 'Unauthorized') {
-      return jsonResponse({ error: 'Unauthorized' }, 401);
-    }
-    if (message == 'Forbidden') {
-      return jsonResponse({ error: 'Forbidden' }, 403);
-    }
     console.error('[send-broadcast-notification] error', error);
-    return jsonResponse({ error: 'No se pudo enviar la notificacion', details: message }, 500);
+    const details = error instanceof Error ? error.message : String(error);
+    return jsonResponse({ error: 'No se pudo enviar la notificacion', details }, 500);
   }
 });

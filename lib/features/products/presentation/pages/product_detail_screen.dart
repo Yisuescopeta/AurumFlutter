@@ -14,6 +14,7 @@ import '../../../cart/presentation/providers/cart_provider.dart';
 import '../../../favorites/presentation/providers/favorites_provider.dart';
 import '../../domain/models/product.dart';
 import '../providers/product_provider.dart';
+import '../../../../core/design_system/widgets/aurum_loader.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   const ProductDetailScreen({super.key, required this.product});
@@ -385,7 +386,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   },
                   loading: () => const SizedBox(
                     height: 120,
-                    child: Center(child: CircularProgressIndicator()),
+                    child: Center(child: AurumLoader()),
                   ),
                   error: (_, __) => SizedBox(
                     height: 120,
@@ -427,7 +428,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               foregroundColor: Colors.white,
             ),
             child: _isAdding
-                ? const CircularProgressIndicator(color: Colors.white)
+                ? const AurumLoader(color: Colors.white)
                 : Text(
                     selectedSize == null
                         ? AppStrings.seleccionarTalla
@@ -634,11 +635,7 @@ class _StockMessage extends StatelessWidget {
     return remainingAsync.when(
       loading: () => const Row(
         children: [
-          SizedBox(
-            width: 14,
-            height: 14,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
+          SizedBox(width: 14, height: 14, child: AurumLoader(strokeWidth: 2)),
           SizedBox(width: 8),
           Text(
             AppStrings.comprobandoStock,

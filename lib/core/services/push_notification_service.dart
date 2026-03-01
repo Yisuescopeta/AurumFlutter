@@ -37,7 +37,9 @@ class PushNotificationService {
   }
 
   Future<void> _initializeLocalNotifications() async {
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
     const iosSettings = DarwinInitializationSettings();
 
     await _localNotifications.initialize(
@@ -50,8 +52,10 @@ class PushNotificationService {
 
     final androidPlugin = _localNotifications
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     await androidPlugin?.createNotificationChannel(_channel);
+    await androidPlugin?.requestNotificationsPermission();
   }
 
   Future<void> _initializeFirebaseMessaging() async {
@@ -65,7 +69,7 @@ class PushNotificationService {
     }
 
     try {
-      await _messaging.requestPermission(
+      final permission = await _messaging.requestPermission(
         alert: true,
         announcement: false,
         badge: true,
@@ -75,9 +79,21 @@ class PushNotificationService {
         sound: true,
       );
 
+      if (permission.authorizationStatus == AuthorizationStatus.denied) {
+        debugPrint(
+          'Push disabled: permiso de notificaciones denegado por el usuario.',
+        );
+      } else {
+        debugPrint(
+          'Permiso de notificaciones: ${permission.authorizationStatus.name}',
+        );
+      }
+
       final token = await _messaging.getToken();
       if (token != null && token.isNotEmpty) {
         await _registerToken(token);
+      } else {
+        debugPrint('No se pudo obtener token FCM en este dispositivo.');
       }
 
       _messaging.onTokenRefresh.listen((token) async {
@@ -120,12 +136,19 @@ class PushNotificationService {
   Future<void> _registerToken(String token) async {
     if (token == _lastRegisteredToken) return;
 
-    final user = Supabase.instance.client.auth.currentUser;
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
     if (user == null) return;
+    final accessToken = client.auth.currentSession?.accessToken.trim() ?? '';
+    if (accessToken.isEmpty) {
+      debugPrint('No se pudo registrar token push: sesion sin access token.');
+      return;
+    }
 
     try {
-      await Supabase.instance.client.functions.invoke(
+      await client.functions.invoke(
         'notifications-register-device',
+        headers: {'Authorization': 'Bearer $accessToken'},
         body: {
           'fcm_token': token,
           'platform': _platformName(),
@@ -134,6 +157,7 @@ class PushNotificationService {
         },
       );
       _lastRegisteredToken = token;
+      debugPrint('Token push registrado correctamente.');
     } catch (e) {
       debugPrint('No se pudo registrar token push: $e');
     }

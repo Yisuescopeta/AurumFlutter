@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/design_system/widgets/aurum_app_bar_title.dart';
 import '../../../../core/design_system/widgets/aurum_card.dart';
 import '../../../../core/design_system/widgets/aurum_section_header.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -16,6 +17,7 @@ import '../../../notifications/presentation/providers/notifications_provider.dar
 import '../../domain/models/product.dart';
 import '../providers/product_provider.dart';
 import '../widgets/home_hero_section.dart';
+import '../../../../core/design_system/widgets/aurum_loader.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -29,11 +31,6 @@ class HomeScreen extends ConsumerWidget {
     final flashProducts = flashOffersAsync.valueOrNull ?? const <Product>[];
     final newArrivals = newArrivalsAsync.valueOrNull ?? const <Product>[];
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final heroHeight = screenWidth >= 1180
-        ? 330.0
-        : screenWidth >= 760
-        ? 300.0
-        : 250.0;
     final gridColumns = screenWidth >= 1180
         ? 4
         : screenWidth >= 840
@@ -49,7 +46,7 @@ class HomeScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppTheme.lightGrey,
       appBar: AppBar(
-        title: const _AurumWordmark(),
+        title: const AurumAppBarTitle('AURUM'),
         actions: [
           IconButton(
             onPressed: () => context.push('/notifications'),
@@ -98,9 +95,9 @@ class HomeScreen extends ConsumerWidget {
               onTap: flashProducts.isEmpty
                   ? null
                   : () => context.push(
-                        '/product-detail',
-                        extra: flashProducts.first,
-                      ),
+                      '/product-detail',
+                      extra: flashProducts.first,
+                    ),
             ).animate().fadeIn().slideY(begin: 0.08, end: 0),
             _HomeMetricsStrip(
               newArrivalsCount: newArrivals.length,
@@ -230,7 +227,7 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     ),
                     child: const Center(
-                      child: CircularProgressIndicator(color: AppTheme.gold),
+                      child: AurumLoader(color: AppTheme.gold),
                     ),
                   ),
                   error: (_, __) => const SizedBox.shrink(),
@@ -278,7 +275,7 @@ class HomeScreen extends ConsumerWidget {
               },
               loading: () => const Padding(
                 padding: EdgeInsets.all(32),
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(child: AurumLoader()),
               ),
               error: (err, _) => Padding(
                 padding: const EdgeInsets.all(32),
@@ -287,75 +284,6 @@ class HomeScreen extends ConsumerWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _AurumWordmark extends StatelessWidget {
-  const _AurumWordmark();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'AURUM',
-          style: GoogleFonts.playfairDisplay(
-            fontWeight: FontWeight.w700,
-            letterSpacing: 2.6,
-            fontSize: 25,
-            color: AppTheme.navyBlue,
-            height: 1,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          'FASHION HOUSE',
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w600,
-            letterSpacing: 1.6,
-            fontSize: 10,
-            color: const Color(0xFF6D778C),
-            height: 1,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _HeroInfoPill extends StatelessWidget {
-  const _HeroInfoPill({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: Colors.white, size: 14),
-          const SizedBox(width: 6),
-          Text(
-            text,
-            style: GoogleFonts.inter(
-              color: Colors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -821,35 +749,10 @@ class _AurumImagePlaceholder extends StatelessWidget {
     return Container(
       color: const Color(0xFFEEF1F7),
       alignment: Alignment.center,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: AppTheme.navyBlue,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.gold.withValues(alpha: 0.8)),
-            ),
-            child: Center(
-              child: Text(
-                'A',
-                style: GoogleFonts.playfairDisplay(
-                  color: AppTheme.gold,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 24,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          const SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        ],
+      child: const SizedBox(
+        width: 28,
+        height: 28,
+        child: AurumLoader(strokeWidth: 2.4),
       ),
     );
   }

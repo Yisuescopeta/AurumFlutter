@@ -116,7 +116,7 @@ Deno.serve(async (req: Request) => {
         }
       }
 
-      if (purchasedProductIds.isNotEmpty) {
+      if (purchasedProductIds.size > 0) {
         const purchasedIds = [...purchasedProductIds];
         const { data: purchasedProducts, error: purchasedProductsError } = await supabaseAdmin
           .from('products')
@@ -131,7 +131,7 @@ Deno.serve(async (req: Request) => {
         }
       }
 
-      if (categoryScore.isEmpty) {
+      if (categoryScore.size == 0) {
         skipped += 1;
         continue;
       }
@@ -171,7 +171,7 @@ Deno.serve(async (req: Request) => {
           !purchasedProductIds.has(p.id)
         );
 
-      if (baseCandidates.isEmpty) {
+      if (baseCandidates.length == 0) {
         skipped += 1;
         continue;
       }
@@ -192,25 +192,25 @@ Deno.serve(async (req: Request) => {
         }
       }
 
-      const inStockCandidates = baseCandidates.filter((candidate) {
+      const inStockCandidates = baseCandidates.filter((candidate) => {
         return (stockByProduct.get(candidate.id) ?? 0) > 0;
       });
-      if (inStockCandidates.isEmpty) {
+      if (inStockCandidates.length == 0) {
         skipped += 1;
         continue;
       }
 
       const ranked = scoreCandidates(inStockCandidates, categoryScore);
       const top = ranked.slice(0, 3);
-      if (top.isEmpty) {
+      if (top.length == 0) {
         skipped += 1;
         continue;
       }
 
-      const topProduct = top.first;
+      const topProduct = top[0];
       const body = top.length == 1
-        ? 'Creemos que ${topProduct.name} te podria gustar.'
-        : 'Te recomendamos: ${top.map((p) => p.name).join(', ')}.';
+        ? `Creemos que ${topProduct.name} te podria gustar.`
+        : `Te recomendamos: ${top.map((p) => p.name).join(', ')}.`;
 
       const dispatch = await createAndDispatchNotification({
         userId,

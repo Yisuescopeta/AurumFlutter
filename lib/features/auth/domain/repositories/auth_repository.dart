@@ -11,6 +11,8 @@ abstract class AuthRepository {
     required String password,
   });
 
+  Future<bool> signInWithGoogle({required String redirectTo});
+
   Future<void> signOut();
 
   Future<Session?> get currentSession;

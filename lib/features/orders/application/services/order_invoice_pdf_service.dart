@@ -319,6 +319,8 @@ class OrderInvoicePdfService {
         return 'Cancelado';
       case 'refunded':
         return 'Devuelto';
+      case 'returned':
+        return 'Devuelto';
       case 'completed':
         return 'Completado';
       case 'failed':

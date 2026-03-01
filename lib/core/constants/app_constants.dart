@@ -27,6 +27,14 @@ class AppConstants {
   static String get cloudinaryApiKey =>
       _env('PUBLIC_CLOUDINARY_API_KEY', fallbackKey: 'CLOUDINARY_API_KEY');
   static String get siteUrl => _env('PUBLIC_SITE_URL', fallbackKey: 'SITE_URL');
+  static String get googleRedirectUrl {
+    final envUrl = _env(
+      'PUBLIC_GOOGLE_REDIRECT_URL',
+      fallbackKey: 'GOOGLE_REDIRECT_URL',
+    );
+    if (envUrl.isNotEmpty) return envUrl;
+    return 'aurum://login-callback/';
+  }
   
   // App
   static const String appName = 'Aurum Fashion Market';

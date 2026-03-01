@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/design_system/widgets/aurum_app_bar_title.dart';
 import '../../../../core/design_system/widgets/aurum_card.dart';
 import '../../../../core/design_system/widgets/aurum_empty_state.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../providers/orders_provider.dart';
+import '../../../../core/design_system/widgets/aurum_loader.dart';
 
 class AdminOrdersScreen extends ConsumerWidget {
   const AdminOrdersScreen({super.key});
@@ -19,7 +21,7 @@ class AdminOrdersScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppTheme.lightGrey,
-      appBar: AppBar(title: const Text(AppStrings.panelAdmin)),
+      appBar: AppBar(title: const AurumAppBarTitle(AppStrings.panelAdmin)),
       body: Column(
         children: [
           Padding(
@@ -29,7 +31,8 @@ class AdminOrdersScreen extends ConsumerWidget {
                 hintText: 'Buscar por correo o id',
                 prefixIcon: Icon(Icons.search),
               ),
-              onChanged: (value) => ref.read(adminSearchQueryProvider.notifier).state = value,
+              onChanged: (value) =>
+                  ref.read(adminSearchQueryProvider.notifier).state = value,
             ),
           ),
           Padding(
@@ -41,11 +44,15 @@ class AdminOrdersScreen extends ConsumerWidget {
                   .map(
                     (s) => DropdownMenuItem(
                       value: s,
-                      child: Text(s.isEmpty ? 'Todos' : Formatters.orderStatus(s)),
+                      child: Text(
+                        s.isEmpty ? 'Todos' : Formatters.orderStatus(s),
+                      ),
                     ),
                   )
                   .toList(),
-              onChanged: (value) => ref.read(adminStatusFilterProvider.notifier).state = value ?? '',
+              onChanged: (value) =>
+                  ref.read(adminStatusFilterProvider.notifier).state =
+                      value ?? '',
             ),
           ),
           const SizedBox(height: 8),
@@ -79,7 +86,10 @@ class AdminOrdersScreen extends ConsumerWidget {
                             color: AppTheme.gold,
                           ),
                         ),
-                        onTap: () => context.push('/admin/order-detail', extra: order.id),
+                        onTap: () => context.push(
+                          '/admin/order-detail',
+                          extra: order.id,
+                        ),
                       ),
                     );
                   },
@@ -87,7 +97,7 @@ class AdminOrdersScreen extends ConsumerWidget {
                   itemCount: orders.length,
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const AurumCenteredLoader(),
               error: (error, _) => Center(child: Text('Error: $error')),
             ),
           ),

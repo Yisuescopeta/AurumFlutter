@@ -103,6 +103,7 @@ export async function ensureOrderFromPaymentIntent(intent: PaymentIntentLike): P
   created: boolean;
 }> {
   const paymentIntentId = intent.id;
+  console.log(`[order-from-intent] Processing intent: ${paymentIntentId}`);
 
   const { data: existing } = await supabaseAdmin
     .from('orders')
@@ -111,13 +112,16 @@ export async function ensureOrderFromPaymentIntent(intent: PaymentIntentLike): P
     .maybeSingle();
 
   if (existing?.id) {
+    console.log(`[order-from-intent] Order already exists: ${existing.id}`);
     return { orderId: String(existing.id), created: false };
   }
 
   const md = intent.metadata ?? {};
   const userId = md.user_id || null;
   const compactItems = parseCompactItems(md);
+
   if (!userId || !intent.amount_received || compactItems.length == 0) {
+    console.error('[order-from-intent] Missing metadata', { userId, amount: intent.amount_received, items: compactItems.length });
     throw new Error('Missing metadata required for order creation');
   }
 
@@ -145,6 +149,7 @@ export async function ensureOrderFromPaymentIntent(intent: PaymentIntentLike): P
     payment_intent_id: paymentIntentId,
   };
 
+  console.log('[order-from-intent] Inserting order...', orderInsert);
   const { data: order, error: orderError } = await supabaseAdmin
     .from('orders')
     .insert(orderInsert)
@@ -152,8 +157,10 @@ export async function ensureOrderFromPaymentIntent(intent: PaymentIntentLike): P
     .single();
 
   if (orderError || !order) {
+    console.error('[order-from-intent] Order insert error:', orderError);
     throw new Error(`Failed to insert order: ${orderError?.message}`);
   }
+  console.log(`[order-from-intent] Order created: ${order.id}`);
 
   // Validate stock before inserting items.
   for (const item of compactItems) {
@@ -165,16 +172,17 @@ export async function ensureOrderFromPaymentIntent(intent: PaymentIntentLike): P
       .single();
 
     if (variantError || !variant || Number(variant.stock ?? 0) < item.q) {
+      console.warn(`[order-from-intent] Stock failure for ${item.n}. Refunding...`);
       await stripe.refunds.create({ payment_intent: paymentIntentId });
       await supabaseAdmin
         .from('orders')
         .update({
           status: 'refunded',
-          refund_status: 'requested',
+          refund_status: 'pending', // Use 'pending' as per new constraints
           refunded_at: new Date().toISOString(),
         })
         .eq('id', order.id);
-      throw new Error(`Stock not available for ${item.n} (${item.s}). Refund requested.`);
+      throw new Error(`Stock not available for ${item.n} (${item.s}). Refund processed.`);
     }
   }
 
@@ -189,6 +197,7 @@ export async function ensureOrderFromPaymentIntent(intent: PaymentIntentLike): P
 
   const { error: itemError } = await supabaseAdmin.from('order_items').insert(orderItems);
   if (itemError) {
+    console.error('[order-from-intent] Item insert error:', itemError);
     throw new Error(`Failed to insert order items: ${itemError.message}`);
   }
 

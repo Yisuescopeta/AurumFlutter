@@ -5,11 +5,13 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/design_system/widgets/aurum_app_bar_title.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../products/domain/models/product.dart';
 import '../../presentation/providers/favorites_provider.dart';
+import '../../../../core/design_system/widgets/aurum_loader.dart';
 
 class FavoritesScreen extends ConsumerWidget {
   const FavoritesScreen({super.key});
@@ -21,7 +23,7 @@ class FavoritesScreen extends ConsumerWidget {
     if (user == null) {
       return Scaffold(
         backgroundColor: const Color(0xFFFDF7E9),
-        appBar: AppBar(title: const Text(AppStrings.favoritos)),
+        appBar: AppBar(title: const AurumAppBarTitle(AppStrings.favoritos)),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -34,7 +36,10 @@ class FavoritesScreen extends ConsumerWidget {
                   end: Alignment.bottomRight,
                   colors: [Color(0xFFFFF4CF), Color(0xFFF3D27A)],
                 ),
-                border: Border.all(color: AppTheme.gold.withValues(alpha: 0.55), width: 1.2),
+                border: Border.all(
+                  color: AppTheme.gold.withValues(alpha: 0.55),
+                  width: 1.2,
+                ),
                 boxShadow: const [
                   BoxShadow(
                     color: Color(0x22B5483F),
@@ -46,7 +51,11 @@ class FavoritesScreen extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.favorite_rounded, color: Color(0xFFB5483F), size: 64),
+                  const Icon(
+                    Icons.favorite_rounded,
+                    color: Color(0xFFB5483F),
+                    size: 64,
+                  ),
                   const SizedBox(height: 10),
                   Text(
                     AppStrings.favoritos,
@@ -91,7 +100,7 @@ class FavoritesScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDF7E9),
-      appBar: AppBar(title: const Text(AppStrings.favoritos)),
+      appBar: AppBar(title: const AurumAppBarTitle(AppStrings.favoritos)),
       body: favoritesAsync.when(
         data: (products) {
           if (products.isEmpty) {
@@ -107,7 +116,10 @@ class FavoritesScreen extends ConsumerWidget {
                       end: Alignment.bottomRight,
                       colors: [Color(0xFFFFF4CF), Color(0xFFF3D27A)],
                     ),
-                    border: Border.all(color: AppTheme.gold.withValues(alpha: 0.55), width: 1.2),
+                    border: Border.all(
+                      color: AppTheme.gold.withValues(alpha: 0.55),
+                      width: 1.2,
+                    ),
                     boxShadow: const [
                       BoxShadow(
                         color: Color(0x22B5483F),
@@ -119,7 +131,11 @@ class FavoritesScreen extends ConsumerWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.favorite_outline, color: Color(0xFFB5483F), size: 64),
+                      const Icon(
+                        Icons.favorite_outline,
+                        color: Color(0xFFB5483F),
+                        size: 64,
+                      ),
                       const SizedBox(height: 10),
                       Text(
                         AppStrings.favoritosVacio,
@@ -168,7 +184,7 @@ class FavoritesScreen extends ConsumerWidget {
             children: [
               Icon(Icons.favorite_rounded, color: Color(0xFFB5483F), size: 38),
               SizedBox(height: 10),
-              CircularProgressIndicator(color: AppTheme.gold),
+              AurumLoader(color: AppTheme.gold),
             ],
           ),
         ),
@@ -245,7 +261,10 @@ class _FavoriteProductCard extends StatelessWidget {
             end: Alignment.bottomRight,
             colors: [Color(0xFFFFF7DE), Color(0xFFF3D07A)],
           ),
-          border: Border.all(color: AppTheme.gold.withValues(alpha: 0.75), width: 1.1),
+          border: Border.all(
+            color: AppTheme.gold.withValues(alpha: 0.75),
+            width: 1.1,
+          ),
           boxShadow: const [
             BoxShadow(
               color: Color(0x1FB5483F),
@@ -264,15 +283,20 @@ class _FavoriteProductCard extends StatelessWidget {
                     width: 84,
                     height: 84,
                     decoration: BoxDecoration(
-                      border: Border.all(color: AppTheme.gold.withValues(alpha: 0.7), width: 1.1),
+                      border: Border.all(
+                        color: AppTheme.gold.withValues(alpha: 0.7),
+                        width: 1.1,
+                      ),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: product.images.isNotEmpty
                         ? CachedNetworkImage(
                             imageUrl: product.images.first,
                             fit: BoxFit.cover,
-                            placeholder: (_, __) => const _FavoriteImagePlaceholder(),
-                            errorWidget: (_, __, ___) => const _FavoriteImagePlaceholder(),
+                            placeholder: (_, __) =>
+                                const _FavoriteImagePlaceholder(),
+                            errorWidget: (_, __, ___) =>
+                                const _FavoriteImagePlaceholder(),
                           )
                         : const _FavoriteImagePlaceholder(),
                   ),
@@ -287,7 +311,11 @@ class _FavoriteProductCard extends StatelessWidget {
                       color: const Color(0xFFB5483F),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Icon(Icons.favorite, color: Colors.white, size: 13),
+                    child: const Icon(
+                      Icons.favorite,
+                      color: Colors.white,
+                      size: 13,
+                    ),
                   ),
                 ),
               ],
@@ -308,17 +336,17 @@ class _FavoriteProductCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                    Text(
-                      (product.category?['name']?.toString() ?? '').toUpperCase(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        letterSpacing: 1.1,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFFB5483F),
-                      ),
+                  Text(
+                    (product.category?['name']?.toString() ?? '').toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      letterSpacing: 1.1,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFFB5483F),
                     ),
+                  ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -330,7 +358,8 @@ class _FavoriteProductCard extends StatelessWidget {
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                      if (product.isOnSale == true && product.salePrice != null) ...[
+                      if (product.isOnSale == true &&
+                          product.salePrice != null) ...[
                         const SizedBox(width: 8),
                         Text(
                           Formatters.euro(product.price),
@@ -359,9 +388,12 @@ class _FavoriteProductCard extends StatelessWidget {
                     ? const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: AurumLoader(strokeWidth: 2),
                       )
-                    : const Icon(Icons.delete_outline_rounded, color: Color(0xFFB5483F)),
+                    : const Icon(
+                        Icons.delete_outline_rounded,
+                        color: Color(0xFFB5483F),
+                      ),
               ),
             ),
           ],

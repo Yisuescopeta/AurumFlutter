@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,10 +7,13 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
+import '../../../../core/design_system/widgets/aurum_loader.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -22,9 +27,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  StreamSubscription<AuthState>? _authSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
+      authState,
+    ) {
+      if (!mounted) return;
+      if (authState.event == AuthChangeEvent.signedIn &&
+          authState.session?.user != null) {
+        context.go('/home');
+      }
+    });
+  }
 
   @override
   void dispose() {
+    _authSubscription?.cancel();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -34,7 +55,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Revisa correo y contrasena para continuar.')),
+        const SnackBar(
+          content: Text('Revisa correo y contrasena para continuar.'),
+        ),
       );
       return;
     }
@@ -63,11 +86,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     context.go('/home');
   }
 
+  Future<void> _handleGoogleLogin() async {
+    final controller = ref.read(authControllerProvider.notifier);
+    await controller.signInWithGoogle(redirectTo: AppConstants.googleRedirectUrl);
+    final state = ref.read(authControllerProvider);
+    if (!mounted) return;
+
+    if (state.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo iniciar con Google: ${state.errorMessage}'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Continua el acceso con Google en el navegador...'),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
     final isLoading = authState.isLoading;
     final isSigningIn = authState.action == AuthAction.signingIn && isLoading;
+    final isSigningInWithGoogle =
+        authState.action == AuthAction.signingInWithGoogle && isLoading;
 
     return Scaffold(
       backgroundColor: AppTheme.navyBlue,
@@ -112,10 +160,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     labelText: AppStrings.correo,
-                    prefixIcon: const Icon(LucideIcons.mail, color: Colors.white70),
+                    prefixIcon: const Icon(
+                      LucideIcons.mail,
+                      color: Colors.white70,
+                    ),
                     labelStyle: const TextStyle(color: Colors.white60),
                     enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                      borderSide: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.3),
+                      ),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     focusedBorder: const OutlineInputBorder(
@@ -142,17 +195,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     labelText: AppStrings.contrasena,
-                    prefixIcon: const Icon(LucideIcons.lock, color: Colors.white70),
+                    prefixIcon: const Icon(
+                      LucideIcons.lock,
+                      color: Colors.white70,
+                    ),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword ? LucideIcons.eye : LucideIcons.eyeOff,
                         color: Colors.white70,
                       ),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                     ),
                     labelStyle: const TextStyle(color: Colors.white60),
                     enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                      borderSide: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.3),
+                      ),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     focusedBorder: const OutlineInputBorder(
@@ -176,7 +235,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     onPressed: () {},
                     child: Text(
                       AppStrings.olvidarContrasena,
-                      style: GoogleFonts.inter(color: AppTheme.gold, fontSize: 14),
+                      style: GoogleFonts.inter(
+                        color: AppTheme.gold,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ),
@@ -193,7 +255,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ? const SizedBox(
                             height: 22,
                             width: 22,
-                            child: CircularProgressIndicator(
+                            child: AurumLoader(
                               color: AppTheme.navyBlue,
                               strokeWidth: 2.5,
                             ),
@@ -211,7 +273,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 24),
                 Row(
                   children: [
-                    Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
+                    Expanded(
+                      child: Divider(
+                        color: Colors.white.withValues(alpha: 0.1),
+                      ),
+                    ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
@@ -223,30 +289,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ),
                     ),
-                    Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
+                    Expanded(
+                      child: Divider(
+                        color: Colors.white.withValues(alpha: 0.1),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
                   height: 56,
                   child: OutlinedButton.icon(
-                    onPressed: isLoading
-                        ? null
-                        : () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Google Sign-In requiere configuracion adicional.'),
-                              ),
-                            );
-                          },
-                    icon: const Icon(FontAwesomeIcons.google, size: 20),
+                    onPressed: isLoading ? null : _handleGoogleLogin,
+                    icon: isSigningInWithGoogle
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: AurumLoader(strokeWidth: 2),
+                          )
+                        : const Icon(FontAwesomeIcons.google, size: 20),
                     label: Text(
-                      AppStrings.iniciarConGoogle,
-                      style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
+                      isSigningInWithGoogle
+                          ? 'Conectando...'
+                          : AppStrings.iniciarConGoogle,
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white,
-                      side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                      side: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.3),
+                      ),
                     ),
                   ),
                 ),
@@ -259,7 +334,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: GoogleFonts.inter(color: Colors.white70),
                     ),
                     TextButton(
-                      onPressed: isLoading ? null : () => context.go('/register'),
+                      onPressed: isLoading
+                          ? null
+                          : () => context.go('/register'),
                       child: Text(
                         AppStrings.crearCuenta,
                         style: GoogleFonts.inter(

@@ -37,6 +37,26 @@ class AdminRepository {
   static const _sendBroadcastNotificationFunction = 'send-broadcast-notification';
   final _random = Random();
 
+  Future<Map<String, String>> _requireAuthHeaders() async {
+    var session = _supabase.auth.currentSession;
+    final expiresAt = session?.expiresAt;
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final isExpired = expiresAt != null && expiresAt <= (now + 30);
+
+    if (session != null && isExpired) {
+      final refreshed = await _supabase.auth.refreshSession();
+      session = refreshed.session ?? _supabase.auth.currentSession;
+    }
+
+    final token = session?.accessToken.trim() ?? '';
+    if (token.isEmpty) {
+      throw Exception(
+        'Tu sesion ha caducado. Cierra sesion y vuelve a entrar para enviar notificaciones.',
+      );
+    }
+    return {'Authorization': 'Bearer $token'};
+  }
+
   List<Map<String, dynamic>> _asMapList(dynamic raw) {
     if (raw is! List) return const [];
     return raw
@@ -246,30 +266,44 @@ class AdminRepository {
     return _asMapList(
       await _supabase
           .from('categories')
-          .select('id,name')
+          .select('id,name,description,is_active')
           .order('name', ascending: true)
           .timeout(const Duration(seconds: 20)),
     );
   }
 
+  Future<String> _generateUniqueCategorySlug(String baseSlug) async {
+    var candidate = baseSlug;
+    var suffix = 2;
+    while (true) {
+      final existing = await _supabase
+          .from('categories')
+          .select('id')
+          .eq('slug', candidate)
+          .maybeSingle()
+          .timeout(const Duration(seconds: 20));
+      if (existing == null) return candidate;
+      candidate = '$baseSlug-$suffix';
+      suffix += 1;
+    }
+  }
+
   Future<void> createCategory({
     required String name,
-    String? slug,
     String? description,
-    String? imageUrl,
     bool isActive = true,
   }) async {
     final normalizedName = name.trim();
-    final normalizedSlug = (slug == null || slug.trim().isEmpty)
-        ? _slugify(normalizedName)
-        : _slugify(slug);
+    final requestedSlug = _slugify(normalizedName);
 
     if (normalizedName.length < 3) {
       throw Exception('El nombre debe tener al menos 3 caracteres');
     }
-    if (normalizedSlug.isEmpty) {
+    if (requestedSlug.isEmpty) {
       throw Exception('El slug no es valido');
     }
+
+    final normalizedSlug = await _generateUniqueCategorySlug(requestedSlug);
 
     await _supabase.from('categories').insert({
       'name': normalizedName,
@@ -277,9 +311,7 @@ class AdminRepository {
       'description': (description == null || description.trim().isEmpty)
           ? null
           : description.trim(),
-      'image_url': (imageUrl == null || imageUrl.trim().isEmpty)
-          ? null
-          : imageUrl.trim(),
+      'image_url': null,
       'is_active': isActive,
     }).timeout(const Duration(seconds: 20));
   }
@@ -534,6 +566,7 @@ class AdminRepository {
     try {
       final res = await _supabase.functions.invoke(
         _sendBroadcastNotificationFunction,
+        headers: await _requireAuthHeaders(),
         body: payload,
       );
       if (res.data is! Map) {
@@ -602,8 +635,11 @@ class AdminRepository {
   Future<Map<String, dynamic>> sendBroadcastCampaign(
     Map<String, dynamic> payload,
   ) async {
-    final res =
-        await _supabase.functions.invoke('send-broadcast-campaign', body: payload);
+    final res = await _supabase.functions.invoke(
+      'send-broadcast-campaign',
+      headers: await _requireAuthHeaders(),
+      body: payload,
+    );
     if (res.data is! Map) {
       throw Exception('Respuesta invalida del envio');
     }

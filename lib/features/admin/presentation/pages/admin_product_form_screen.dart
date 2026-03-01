@@ -5,8 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/design_system/widgets/aurum_app_bar_title.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../providers/admin_provider.dart';
+import '../../../../core/design_system/widgets/aurum_loader.dart';
 
 class AdminProductFormScreen extends ConsumerStatefulWidget {
   const AdminProductFormScreen({super.key, this.productId});
@@ -19,12 +21,9 @@ class AdminProductFormScreen extends ConsumerStatefulWidget {
 }
 
 class _ProductImageItem {
-  _ProductImageItem.remote(this.url)
-      : localFile = null,
-        bytes = null;
+  _ProductImageItem.remote(this.url) : localFile = null, bytes = null;
 
-  _ProductImageItem.local(this.localFile, this.bytes)
-      : url = null;
+  _ProductImageItem.local(this.localFile, this.bytes) : url = null;
 
   final String? url;
   final XFile? localFile;
@@ -33,7 +32,8 @@ class _ProductImageItem {
   bool get isLocal => localFile != null;
 }
 
-class _AdminProductFormScreenState extends ConsumerState<AdminProductFormScreen> {
+class _AdminProductFormScreenState
+    extends ConsumerState<AdminProductFormScreen> {
   static const _maxImages = 6;
 
   final _formKey = GlobalKey<FormState>();
@@ -79,10 +79,11 @@ class _AdminProductFormScreenState extends ConsumerState<AdminProductFormScreen>
         _name.text = product['name']?.toString() ?? '';
         _description.text = product['description']?.toString() ?? '';
         _material.text = product['material']?.toString() ?? '';
-        _price.text =
-            (((product['price'] as num?)?.toInt() ?? 0) / 100).toStringAsFixed(2);
+        _price.text = (((product['price'] as num?)?.toInt() ?? 0) / 100)
+            .toStringAsFixed(2);
         _salePrice.text =
-            (((product['sale_price'] as num?)?.toInt() ?? 0) / 100).toStringAsFixed(2);
+            (((product['sale_price'] as num?)?.toInt() ?? 0) / 100)
+                .toStringAsFixed(2);
         _isOnSale = product['is_on_sale'] == true;
         _isActive = product['is_active'] != false;
         _categoryId = product['category_id']?.toString();
@@ -96,16 +97,16 @@ class _AdminProductFormScreenState extends ConsumerState<AdminProductFormScreen>
             .map((url) => _ProductImageItem.remote(url))
             .toList();
 
-        _variants = (((product['product_variants'] as List?) ?? const []))
-            .map((e) {
-              final m = e as Map<String, dynamic>;
-              return {
-                'size': m['size']?.toString() ?? '',
-                'stock': (m['stock'] as num?)?.toInt() ?? 0,
-                'sku_variant': m['sku_variant']?.toString() ?? '',
-              };
-            })
-            .toList();
+        _variants = (((product['product_variants'] as List?) ?? const [])).map((
+          e,
+        ) {
+          final m = e as Map<String, dynamic>;
+          return {
+            'size': m['size']?.toString() ?? '',
+            'stock': (m['stock'] as num?)?.toInt() ?? 0,
+            'sku_variant': m['sku_variant']?.toString() ?? '',
+          };
+        }).toList();
         if (_variants.isEmpty) {
           _variants = [
             {'size': 'M', 'stock': 0, 'sku_variant': ''},
@@ -138,258 +139,250 @@ class _AdminProductFormScreenState extends ConsumerState<AdminProductFormScreen>
     final isEdit = widget.productId != null;
     return Scaffold(
       backgroundColor: AppTheme.lightGrey,
-      appBar: AppBar(title: Text(isEdit ? 'Editar producto' : 'Nuevo producto')),
+      appBar: AppBar(
+        title: AurumAppBarTitle(isEdit ? 'Editar producto' : 'Nuevo producto'),
+      ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const AurumCenteredLoader()
           : _loadError != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('No se pudo cargar el formulario'),
+                    const SizedBox(height: 8),
+                    Text(
+                      _loadError!,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: _load,
+                      child: const Text('Reintentar'),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : _categories.isEmpty
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'No hay categorias disponibles. Crea una categoria primero.',
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        await context.push('/admin/categories');
+                        if (!mounted) return;
+                        await _load();
+                      },
+                      icon: const Icon(Icons.category_outlined),
+                      label: const Text('Ir a categorias'),
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: _load,
+                      child: const Text('Actualizar'),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _name,
+                      decoration: const InputDecoration(labelText: 'Nombre'),
+                      validator: (v) => (v == null || v.trim().length < 3)
+                          ? 'Minimo 3 caracteres'
+                          : null,
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _description,
+                      decoration: const InputDecoration(
+                        labelText: 'Descripcion',
+                      ),
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
                       children: [
-                        const Text('No se pudo cargar el formulario'),
-                        const SizedBox(height: 8),
-                        Text(
-                          _loadError!,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodySmall,
+                        Expanded(
+                          child: TextFormField(
+                            controller: _price,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            decoration: const InputDecoration(
+                              labelText: 'Precio (EUR)',
+                            ),
+                            validator: (v) {
+                              final n = double.tryParse(v ?? '');
+                              if (n == null || n <= 0) {
+                                return 'Precio invalido';
+                              }
+                              return null;
+                            },
+                          ),
                         ),
-                        const SizedBox(height: 12),
-                        ElevatedButton(
-                          onPressed: _load,
-                          child: const Text('Reintentar'),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _salePrice,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            decoration: const InputDecoration(
+                              labelText: 'Precio oferta (EUR)',
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                )
-              : _categories.isEmpty
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text(
-                              'No hay categorias disponibles. Crea una categoria primero.',
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _material,
+                      decoration: const InputDecoration(labelText: 'Material'),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      initialValue: _categoryId,
+                      decoration: const InputDecoration(labelText: 'Categoria'),
+                      items: _categories
+                          .map(
+                            (c) => DropdownMenuItem(
+                              value: c['id'].toString(),
+                              child: Text(c['name']?.toString() ?? '-'),
                             ),
-                            const SizedBox(height: 12),
-                            ElevatedButton.icon(
-                              onPressed: () async {
-                                await context.push('/admin/categories');
-                                if (!mounted) return;
-                                await _load();
-                              },
-                              icon: const Icon(Icons.category_outlined),
-                              label: const Text('Ir a categorias'),
-                            ),
-                            const SizedBox(height: 8),
-                            ElevatedButton(
-                              onPressed: _load,
-                              child: const Text('Actualizar'),
-                            ),
-                          ],
-                        ),
+                          )
+                          .toList(),
+                      onChanged: (v) => setState(() => _categoryId = v),
+                      validator: (v) => (v == null || v.isEmpty)
+                          ? 'Selecciona categoria'
+                          : null,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildImageSection(context),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.black12),
                       ),
-                    )
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          children: [
-                            TextFormField(
-                              controller: _name,
-                              decoration:
-                                  const InputDecoration(labelText: 'Nombre'),
-                              validator: (v) => (v == null || v.trim().length < 3)
-                                  ? 'Minimo 3 caracteres'
-                                  : null,
-                            ),
-                            const SizedBox(height: 8),
-                            TextFormField(
-                              controller: _description,
-                              decoration:
-                                  const InputDecoration(labelText: 'Descripcion'),
-                              maxLines: 3,
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: _price,
-                                    keyboardType:
-                                        const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
-                                    decoration: const InputDecoration(
-                                      labelText: 'Precio (EUR)',
-                                    ),
-                                    validator: (v) {
-                                      final n = double.tryParse(v ?? '');
-                                      if (n == null || n <= 0) {
-                                        return 'Precio invalido';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: _salePrice,
-                                    keyboardType:
-                                        const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
-                                    decoration: const InputDecoration(
-                                      labelText: 'Precio oferta (EUR)',
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            TextFormField(
-                              controller: _material,
-                              decoration:
-                                  const InputDecoration(labelText: 'Material'),
-                            ),
-                            const SizedBox(height: 8),
-                            DropdownButtonFormField<String>(
-                              initialValue: _categoryId,
-                              decoration:
-                                  const InputDecoration(labelText: 'Categoria'),
-                              items: _categories
-                                  .map(
-                                    (c) => DropdownMenuItem(
-                                      value: c['id'].toString(),
-                                      child: Text(c['name']?.toString() ?? '-'),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (v) => setState(() => _categoryId = v),
-                              validator: (v) => (v == null || v.isEmpty)
-                                  ? 'Selecciona categoria'
-                                  : null,
-                            ),
-                            const SizedBox(height: 8),
-                            _buildImageSection(context),
-                            const SizedBox(height: 8),
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.black12),
-                              ),
-                              child: const Text(
-                                'Slug y SKU se generan automaticamente al guardar.',
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            SwitchListTile(
-                              contentPadding: EdgeInsets.zero,
-                              value: _isOnSale,
-                              title: const Text('En oferta'),
-                              onChanged: (v) => setState(() => _isOnSale = v),
-                            ),
-                            SwitchListTile(
-                              contentPadding: EdgeInsets.zero,
-                              value: _isActive,
-                              title: const Text('Activo'),
-                              onChanged: (v) => setState(() => _isActive = v),
-                            ),
-                            const SizedBox(height: 8),
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                'Variantes de talla',
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            ..._variants.asMap().entries.map((entry) {
-                              final i = entry.key;
-                              final v = entry.value;
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: TextFormField(
-                                        initialValue:
-                                            v['size']?.toString() ?? '',
-                                        decoration: const InputDecoration(
-                                          labelText: 'Talla',
-                                        ),
-                                        onChanged: (val) =>
-                                            _variants[i]['size'] = val,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: TextFormField(
-                                        initialValue:
-                                            (v['stock'] as int).toString(),
-                                        keyboardType: TextInputType.number,
-                                        decoration: const InputDecoration(
-                                          labelText: 'Stock',
-                                        ),
-                                        onChanged: (val) => _variants[i]['stock'] =
-                                            int.tryParse(val) ?? 0,
-                                      ),
-                                    ),
-                                    IconButton(
-                                      onPressed: _variants.length == 1
-                                          ? null
-                                          : () =>
-                                              setState(() => _variants.removeAt(i)),
-                                      icon:
-                                          const Icon(Icons.remove_circle_outline),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }),
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: TextButton.icon(
-                                onPressed: () => setState(
-                                  () => _variants.add({
-                                    'size': '',
-                                    'stock': 0,
-                                    'sku_variant': '',
-                                  }),
-                                ),
-                                icon: const Icon(Icons.add),
-                                label: const Text('Agregar talla'),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: _isSaving ? null : _save,
-                                child: _isSaving
-                                    ? const SizedBox(
-                                        height: 20,
-                                        width: 20,
-                                        child:
-                                            CircularProgressIndicator(strokeWidth: 2),
-                                      )
-                                    : Text(isEdit
-                                        ? 'Guardar cambios'
-                                        : 'Crear producto'),
-                              ),
-                            ),
-                          ],
-                        ),
+                      child: const Text(
+                        'Slug y SKU se generan automaticamente al guardar.',
                       ),
                     ),
+                    const SizedBox(height: 8),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: _isOnSale,
+                      title: const Text('En oferta'),
+                      onChanged: (v) => setState(() => _isOnSale = v),
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: _isActive,
+                      title: const Text('Activo'),
+                      onChanged: (v) => setState(() => _isActive = v),
+                    ),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Variantes de talla',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ..._variants.asMap().entries.map((entry) {
+                      final i = entry.key;
+                      final v = entry.value;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                initialValue: v['size']?.toString() ?? '',
+                                decoration: const InputDecoration(
+                                  labelText: 'Talla',
+                                ),
+                                onChanged: (val) => _variants[i]['size'] = val,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: TextFormField(
+                                initialValue: (v['stock'] as int).toString(),
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  labelText: 'Stock',
+                                ),
+                                onChanged: (val) => _variants[i]['stock'] =
+                                    int.tryParse(val) ?? 0,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: _variants.length == 1
+                                  ? null
+                                  : () => setState(() => _variants.removeAt(i)),
+                              icon: const Icon(Icons.remove_circle_outline),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: () => setState(
+                          () => _variants.add({
+                            'size': '',
+                            'stock': 0,
+                            'sku_variant': '',
+                          }),
+                        ),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Agregar talla'),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isSaving ? null : _save,
+                        child: _isSaving
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: AurumLoader(strokeWidth: 2),
+                              )
+                            : Text(
+                                isEdit ? 'Guardar cambios' : 'Crear producto',
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
     );
   }
 
@@ -416,13 +409,16 @@ class _AdminProductFormScreenState extends ConsumerState<AdminProductFormScreen>
             runSpacing: 8,
             children: [
               OutlinedButton.icon(
-                onPressed:
-                    (_isSaving || remaining <= 0) ? null : _pickFromGallery,
+                onPressed: (_isSaving || remaining <= 0)
+                    ? null
+                    : _pickFromGallery,
                 icon: const Icon(Icons.photo_library_outlined),
                 label: const Text('Galeria'),
               ),
               OutlinedButton.icon(
-                onPressed: (_isSaving || remaining <= 0) ? null : _pickFromCamera,
+                onPressed: (_isSaving || remaining <= 0)
+                    ? null
+                    : _pickFromCamera,
                 icon: const Icon(Icons.photo_camera_outlined),
                 label: const Text('Camara'),
               ),
@@ -430,69 +426,71 @@ class _AdminProductFormScreenState extends ConsumerState<AdminProductFormScreen>
           ),
           if (_imageItems.isNotEmpty) ...[
             const SizedBox(height: 12),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _imageItems.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
-                childAspectRatio: 0.72,
-              ),
-              itemBuilder: (context, index) {
-                final item = _imageItems[index];
-                return Column(
-                  children: [
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: item.isLocal
-                            ? Image.memory(
-                                item.bytes!,
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                              )
-                            : Image.network(
-                                item.url!,
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                              ),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final crossAxisCount = constraints.maxWidth < 360 ? 2 : 3;
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _imageItems.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    childAspectRatio: 0.72,
+                  ),
+                  itemBuilder: (context, index) {
+                    final item = _imageItems[index];
+                    return Column(
                       children: [
-                        IconButton(
-                          visualDensity: VisualDensity.compact,
-                          onPressed: index == 0
-                              ? null
-                              : () => setState(() {
-                                    final cur = _imageItems.removeAt(index);
-                                    _imageItems.insert(index - 1, cur);
-                                  }),
-                          icon: const Icon(Icons.chevron_left),
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: item.isLocal
+                                ? Image.memory(
+                                    item.bytes!,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                  )
+                                : Image.network(
+                                    item.url!,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                  ),
+                          ),
                         ),
-                        IconButton(
-                          visualDensity: VisualDensity.compact,
-                          onPressed: () =>
-                              setState(() => _imageItems.removeAt(index)),
-                          icon: const Icon(Icons.delete_outline),
-                        ),
-                        IconButton(
-                          visualDensity: VisualDensity.compact,
-                          onPressed: index == _imageItems.length - 1
-                              ? null
-                              : () => setState(() {
-                                    final cur = _imageItems.removeAt(index);
-                                    _imageItems.insert(index + 1, cur);
-                                  }),
-                          icon: const Icon(Icons.chevron_right),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _ThumbActionButton(
+                              icon: Icons.chevron_left,
+                              onPressed: index == 0
+                                  ? null
+                                  : () => setState(() {
+                                      final cur = _imageItems.removeAt(index);
+                                      _imageItems.insert(index - 1, cur);
+                                    }),
+                            ),
+                            _ThumbActionButton(
+                              icon: Icons.delete_outline,
+                              onPressed: () =>
+                                  setState(() => _imageItems.removeAt(index)),
+                            ),
+                            _ThumbActionButton(
+                              icon: Icons.chevron_right,
+                              onPressed: index == _imageItems.length - 1
+                                  ? null
+                                  : () => setState(() {
+                                      final cur = _imageItems.removeAt(index);
+                                      _imageItems.insert(index + 1, cur);
+                                    }),
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                  ],
+                    );
+                  },
                 );
               },
             ),
@@ -519,7 +517,9 @@ class _AdminProductFormScreenState extends ConsumerState<AdminProductFormScreen>
       setState(() => _imageItems.addAll(toAdd));
       if (picked.length > remaining && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Solo puedes subir hasta $_maxImages imagenes')),
+          SnackBar(
+            content: Text('Solo puedes subir hasta $_maxImages imagenes'),
+          ),
         );
       }
     } catch (e) {
@@ -543,9 +543,9 @@ class _AdminProductFormScreenState extends ConsumerState<AdminProductFormScreen>
       setState(() => _imageItems.add(_ProductImageItem.local(picked, bytes)));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo abrir la camara: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('No se pudo abrir la camara: $e')));
     }
   }
 
@@ -572,7 +572,9 @@ class _AdminProductFormScreenState extends ConsumerState<AdminProductFormScreen>
     }
     if (duplicateSizes.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Tallas duplicadas: ${duplicateSizes.join(', ')}')),
+        SnackBar(
+          content: Text('Tallas duplicadas: ${duplicateSizes.join(', ')}'),
+        ),
       );
       return;
     }
@@ -582,7 +584,8 @@ class _AdminProductFormScreenState extends ConsumerState<AdminProductFormScreen>
       final repo = ref.read(adminRepositoryProvider);
       final productId = widget.productId;
 
-      final slugToSave = (_currentSlug != null && _currentSlug!.trim().isNotEmpty)
+      final slugToSave =
+          (_currentSlug != null && _currentSlug!.trim().isNotEmpty)
           ? _currentSlug!.trim()
           : await repo.generateUniqueSlug(
               _name.text.trim(),
@@ -603,7 +606,9 @@ class _AdminProductFormScreenState extends ConsumerState<AdminProductFormScreen>
         'sale_price': _isOnSale && sale != null ? (sale * 100).round() : null,
         'is_on_sale': _isOnSale,
         'sku': skuToSave,
-        'material': _material.text.trim().isEmpty ? null : _material.text.trim(),
+        'material': _material.text.trim().isEmpty
+            ? null
+            : _material.text.trim(),
         'category_id': _categoryId,
         'is_active': _isActive,
       };
@@ -673,12 +678,30 @@ class _AdminProductFormScreenState extends ConsumerState<AdminProductFormScreen>
       Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo guardar: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('No se pudo guardar: $e')));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
   }
 }
 
+class _ThumbActionButton extends StatelessWidget {
+  const _ThumbActionButton({required this.icon, required this.onPressed});
+
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      visualDensity: VisualDensity.compact,
+      constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+      padding: EdgeInsets.zero,
+      iconSize: 18,
+      onPressed: onPressed,
+      icon: Icon(icon),
+    );
+  }
+}

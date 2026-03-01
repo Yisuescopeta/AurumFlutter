@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "951836904560",
+    "project_id": "flutteraurum",
+    "storage_bucket": "flutteraurum.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:951836904560:android:ff522af21eedac0c5138b5",
+        "android_client_info": {
+          "package_name": "com.aurum.aurum_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBxHbgo1K7eWG0UTM4Wj449Bfi7SvM6sPo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

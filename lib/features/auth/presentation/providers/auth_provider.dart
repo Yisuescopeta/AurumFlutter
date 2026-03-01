@@ -8,7 +8,7 @@ import '../../data/repositories/profile_repository.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/models/profile.dart';
 
-enum AuthAction { idle, signingIn, signingUp }
+enum AuthAction { idle, signingIn, signingUp, signingInWithGoogle }
 
 class AuthUiState {
   const AuthUiState({
@@ -90,6 +90,15 @@ class AuthController extends StateNotifier<AuthUiState> {
     );
   }
 
+  Future<void> signInWithGoogle({required String redirectTo}) async {
+    await _runAuthAction(
+      action: AuthAction.signingInWithGoogle,
+      operation: () => _repository
+          .signInWithGoogle(redirectTo: redirectTo)
+          .timeout(_authTimeout),
+    );
+  }
+
   Future<void> signOut() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
@@ -114,7 +123,12 @@ class AuthController extends StateNotifier<AuthUiState> {
   }) async {
     state = state.copyWith(action: action, isLoading: true, clearError: true);
 
-    final operationName = action == AuthAction.signingIn ? 'signIn' : 'signUp';
+    final operationName = switch (action) {
+      AuthAction.signingIn => 'signIn',
+      AuthAction.signingUp => 'signUp',
+      AuthAction.signingInWithGoogle => 'signInWithGoogle',
+      AuthAction.idle => 'auth',
+    };
     debugPrint('[AUTH] $operationName started');
     try {
       await operation();

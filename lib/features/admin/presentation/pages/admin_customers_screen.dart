@@ -5,12 +5,14 @@ import '../../../../core/design_system/widgets/aurum_card.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../providers/admin_provider.dart';
+import '../../../../core/design_system/widgets/aurum_loader.dart';
 
 class AdminCustomersScreen extends ConsumerStatefulWidget {
   const AdminCustomersScreen({super.key});
 
   @override
-  ConsumerState<AdminCustomersScreen> createState() => _AdminCustomersScreenState();
+  ConsumerState<AdminCustomersScreen> createState() =>
+      _AdminCustomersScreenState();
 }
 
 class _AdminCustomersScreenState extends ConsumerState<AdminCustomersScreen> {
@@ -31,10 +33,12 @@ class _AdminCustomersScreenState extends ConsumerState<AdminCustomersScreen> {
       future: repo.getClients(query: _query, roleFilter: _role),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const AurumCenteredLoader();
         }
         if (snapshot.hasError || !snapshot.hasData) {
-          return Center(child: Text('Error cargando clientes: ${snapshot.error}'));
+          return Center(
+            child: Text('Error cargando clientes: ${snapshot.error}'),
+          );
         }
         final clients = snapshot.data!;
         return ListView(
@@ -63,7 +67,10 @@ class _AdminCustomersScreenState extends ConsumerState<AdminCustomersScreen> {
                       decoration: const InputDecoration(labelText: 'Rol'),
                       items: const [
                         DropdownMenuItem(value: 'all', child: Text('Todos')),
-                        DropdownMenuItem(value: 'customer', child: Text('Cliente')),
+                        DropdownMenuItem(
+                          value: 'customer',
+                          child: Text('Cliente'),
+                        ),
                         DropdownMenuItem(value: 'admin', child: Text('Admin')),
                       ],
                       onChanged: (v) => setState(() => _role = v ?? 'all'),
@@ -75,7 +82,9 @@ class _AdminCustomersScreenState extends ConsumerState<AdminCustomersScreen> {
             const SizedBox(height: 12),
             ...clients.map((c) {
               final createdAtRaw = c['created_at']?.toString();
-              final createdAt = createdAtRaw == null ? null : DateTime.tryParse(createdAtRaw);
+              final createdAt = createdAtRaw == null
+                  ? null
+                  : DateTime.tryParse(createdAtRaw);
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: AurumCard(
@@ -91,21 +100,34 @@ class _AdminCustomersScreenState extends ConsumerState<AdminCustomersScreen> {
                         style: const TextStyle(color: AppTheme.gold),
                       ),
                     ),
-                    title: Text(c['full_name']?.toString().isNotEmpty == true ? c['full_name'].toString() : 'Sin nombre'),
+                    title: Text(
+                      c['full_name']?.toString().isNotEmpty == true
+                          ? c['full_name'].toString()
+                          : 'Sin nombre',
+                    ),
                     subtitle: Text(
                       '${c['email'] ?? 'Sin email'}\n${c['city'] ?? '-'}  -  Alta: ${Formatters.date(createdAt)}',
                     ),
                     isThreeLine: true,
                     trailing: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
-                        color: (c['role'] == 'admin' ? Colors.purple : AppTheme.gold).withValues(alpha: 0.12),
+                        color:
+                            (c['role'] == 'admin'
+                                    ? Colors.purple
+                                    : AppTheme.gold)
+                                .withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         c['role'] == 'admin' ? 'ADMIN' : 'CLIENTE',
                         style: TextStyle(
-                          color: c['role'] == 'admin' ? Colors.purple : AppTheme.gold,
+                          color: c['role'] == 'admin'
+                              ? Colors.purple
+                              : AppTheme.gold,
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                         ),
@@ -121,4 +143,3 @@ class _AdminCustomersScreenState extends ConsumerState<AdminCustomersScreen> {
     );
   }
 }
-

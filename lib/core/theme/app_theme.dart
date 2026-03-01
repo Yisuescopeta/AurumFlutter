@@ -13,6 +13,38 @@ class AppTheme {
   static const Color error = AppTokens.error;
   static const Color success = AppTokens.success;
 
+  static TextStyle appBarBrandBaseTitleStyle({Color? color}) {
+    return GoogleFonts.playfairDisplay(
+      color: color ?? navyBlue,
+      fontWeight: FontWeight.w700,
+      fontSize: 27,
+      letterSpacing: 1.4,
+      height: 1.04,
+    );
+  }
+
+  static TextStyle appBarBrandTitleStyle(BuildContext context, {Color? color}) {
+    final width = MediaQuery.sizeOf(context).width;
+    final fontSize = width >= 840
+        ? 30.0
+        : width >= 600
+        ? 27.0
+        : 24.0;
+    final letterSpacing = width >= 840
+        ? 1.8
+        : width >= 600
+        ? 1.4
+        : 1.1;
+
+    return GoogleFonts.playfairDisplay(
+      color: color ?? navyBlue,
+      fontWeight: FontWeight.w700,
+      fontSize: fontSize,
+      letterSpacing: letterSpacing,
+      height: 1.04,
+    );
+  }
+
   static ThemeData get lightTheme {
     final base = ThemeData(useMaterial3: true);
     final playfair = GoogleFonts.playfairDisplayTextTheme(base.textTheme);
@@ -35,11 +67,7 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         iconTheme: const IconThemeData(color: navyBlue),
-        titleTextStyle: playfair.titleLarge?.copyWith(
-          color: navyBlue,
-          fontWeight: FontWeight.w700,
-          fontSize: 28,
-        ),
+        titleTextStyle: appBarBrandBaseTitleStyle(),
       ),
       textTheme: inter.copyWith(
         displayLarge: playfair.displayLarge?.copyWith(
@@ -62,8 +90,14 @@ class AppTheme {
           fontWeight: FontWeight.w700,
           fontSize: 22,
         ),
-        bodyLarge: inter.bodyLarge?.copyWith(color: AppTokens.navy700, height: 1.45),
-        bodyMedium: inter.bodyMedium?.copyWith(color: AppTokens.slate600, height: 1.4),
+        bodyLarge: inter.bodyLarge?.copyWith(
+          color: AppTokens.navy700,
+          height: 1.45,
+        ),
+        bodyMedium: inter.bodyMedium?.copyWith(
+          color: AppTokens.slate600,
+          height: 1.4,
+        ),
         labelLarge: inter.labelLarge?.copyWith(
           color: Colors.white,
           fontWeight: FontWeight.w700,
@@ -77,8 +111,12 @@ class AppTheme {
         elevation: 0,
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => inter.labelSmall?.copyWith(
-            color: states.contains(WidgetState.selected) ? navyBlue : AppTokens.slate600,
-            fontWeight: states.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w500,
+            color: states.contains(WidgetState.selected)
+                ? navyBlue
+                : AppTokens.slate600,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w700
+                : FontWeight.w500,
           ),
         ),
       ),
@@ -132,7 +170,9 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,
-        hintStyle: inter.bodyMedium?.copyWith(color: AppTokens.slate600.withValues(alpha: 0.9)),
+        hintStyle: inter.bodyMedium?.copyWith(
+          color: AppTokens.slate600.withValues(alpha: 0.9),
+        ),
         labelStyle: inter.bodyMedium?.copyWith(color: AppTokens.slate600),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppTokens.space16,
@@ -182,7 +222,9 @@ class AppTheme {
           color: navyBlue,
           fontWeight: FontWeight.w600,
         ),
-        subtitleTextStyle: inter.bodyMedium?.copyWith(color: AppTokens.slate600),
+        subtitleTextStyle: inter.bodyMedium?.copyWith(
+          color: AppTokens.slate600,
+        ),
       ),
     );
   }

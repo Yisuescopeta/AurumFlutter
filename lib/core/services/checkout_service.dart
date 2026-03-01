@@ -1,6 +1,21 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+class OrderConfirmationDeferredException implements Exception {
+  OrderConfirmationDeferredException([this.details]);
+
+  final String? details;
+
+  @override
+  String toString() {
+    final info = details?.trim();
+    if (info == null || info.isEmpty) {
+      return 'OrderConfirmationDeferredException';
+    }
+    return 'OrderConfirmationDeferredException: $info';
+  }
+}
 
 class CheckoutShippingData {
   CheckoutShippingData({
@@ -195,47 +210,54 @@ class CheckoutService {
     }
   }
 
-  Future<bool> waitForOrderCreation(
-    String paymentIntentId, {
-    Duration timeout = const Duration(seconds: 25),
-    Duration pollEvery = const Duration(seconds: 2),
-  }) async {
-    final start = DateTime.now();
+  Future<void> confirmOrderAfterPayment(String paymentIntentId) async {
+    const retryDelays = <Duration>[
+      Duration.zero,
+      Duration(milliseconds: 700),
+      Duration(milliseconds: 1500),
+    ];
 
-    while (DateTime.now().difference(start) < timeout) {
-      final response = await _supabase
-          .from('orders')
-          .select('id')
-          .eq('payment_intent_id', paymentIntentId)
-          .maybeSingle();
+    Object? lastError;
 
-      if (response != null) {
-        return true;
+    for (final delay in retryDelays) {
+      if (delay > Duration.zero) {
+        await Future.delayed(delay);
       }
 
-      await Future.delayed(pollEvery);
+      try {
+        final response = await _supabase.functions.invoke(
+          'confirm-payment-intent',
+          body: {'payment_intent_id': paymentIntentId},
+        );
+
+        final data = response.data;
+        if (data is! Map) {
+          lastError = Exception('Respuesta invalida en confirm-payment-intent');
+          continue;
+        }
+
+        final map = Map<String, dynamic>.from(data);
+        final ok = map['ok'] == true;
+        final created = map['order_created'] == true;
+        if (ok && created) return;
+
+        final reason = map['error']?.toString().trim();
+        lastError = Exception(
+          reason == null || reason.isEmpty
+              ? 'confirm-payment-intent no confirmo el pedido'
+              : reason,
+        );
+      } on FunctionException catch (e) {
+        if (e.status == 404 || e.status == 409 || e.status >= 500) {
+          lastError = e;
+          continue;
+        }
+        rethrow;
+      } catch (e) {
+        lastError = e;
+      }
     }
 
-    return false;
-  }
-
-  Future<bool> confirmOrderFromPaymentIntent(String paymentIntentId) async {
-    try {
-      final response = await _supabase.functions.invoke(
-        'confirm-payment-intent',
-        body: {'payment_intent_id': paymentIntentId},
-      );
-
-      final data = response.data;
-      if (data is! Map) return false;
-      final map = Map<String, dynamic>.from(data);
-      return map['ok'] == true && map['order_created'] == true;
-    } on FunctionException catch (e) {
-      // Fallback endpoint not deployed yet or temporary function error.
-      if (e.status == 404) return false;
-      return false;
-    } catch (_) {
-      return false;
-    }
+    throw OrderConfirmationDeferredException(lastError?.toString());
   }
 }

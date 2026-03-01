@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'aurum_loader.dart';
 
 enum AurumButtonVariant { primary, secondary, ghost }
 
@@ -28,7 +29,7 @@ class AurumButton extends StatelessWidget {
           const SizedBox(
             width: 18,
             height: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
+            child: AurumLoader(strokeWidth: 2),
           )
         else if (icon != null)
           Icon(icon, size: 18),
@@ -39,11 +40,20 @@ class AurumButton extends StatelessWidget {
 
     switch (variant) {
       case AurumButtonVariant.primary:
-        return ElevatedButton(onPressed: isLoading ? null : onPressed, child: child);
+        return ElevatedButton(
+          onPressed: isLoading ? null : onPressed,
+          child: child,
+        );
       case AurumButtonVariant.secondary:
-        return OutlinedButton(onPressed: isLoading ? null : onPressed, child: child);
+        return OutlinedButton(
+          onPressed: isLoading ? null : onPressed,
+          child: child,
+        );
       case AurumButtonVariant.ghost:
-        return TextButton(onPressed: isLoading ? null : onPressed, child: child);
+        return TextButton(
+          onPressed: isLoading ? null : onPressed,
+          child: child,
+        );
     }
   }
 }

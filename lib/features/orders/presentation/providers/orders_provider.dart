@@ -15,6 +15,7 @@ const orderStatuses = <String>[
   'delivered',
   'cancelled',
   'refunded',
+  'returned',
 ];
 
 final ordersRepositoryProvider = Provider<OrdersRepository>((ref) {
@@ -68,6 +69,7 @@ class AdminOrderController extends StateNotifier<AsyncValue<void>> {
     'delivered': {},
     'cancelled': {},
     'refunded': {},
+    'returned': {},
   };
 
   bool canTransition(String current, String next) {

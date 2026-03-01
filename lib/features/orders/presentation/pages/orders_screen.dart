@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/design_system/widgets/aurum_app_bar_title.dart';
 import '../../../../core/design_system/widgets/aurum_card.dart';
 import '../../../../core/design_system/widgets/aurum_empty_state.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../providers/orders_provider.dart';
+import '../../../../core/design_system/widgets/aurum_loader.dart';
 
 class OrdersScreen extends ConsumerWidget {
   const OrdersScreen({super.key});
@@ -18,7 +20,7 @@ class OrdersScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppTheme.lightGrey,
-      appBar: AppBar(title: const Text(AppStrings.misPedidos)),
+      appBar: AppBar(title: const AurumAppBarTitle(AppStrings.misPedidos)),
       body: ordersAsync.when(
         data: (orders) {
           if (orders.isEmpty) {
@@ -59,7 +61,7 @@ class OrdersScreen extends ConsumerWidget {
             itemCount: orders.length,
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const AurumCenteredLoader(),
         error: (error, _) => Center(child: Text('Error: $error')),
       ),
     );

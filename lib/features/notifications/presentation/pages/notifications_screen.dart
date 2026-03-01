@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../core/design_system/widgets/aurum_app_bar_title.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../products/presentation/providers/product_provider.dart';
 import '../../domain/models/app_notification.dart';
 import '../../domain/models/notification_preferences.dart';
 import '../providers/notifications_provider.dart';
+import '../../../../core/design_system/widgets/aurum_loader.dart';
 
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
@@ -20,7 +22,7 @@ class NotificationsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppTheme.lightGrey,
       appBar: AppBar(
-        title: const Text('Notificaciones'),
+        title: const AurumAppBarTitle('Notificaciones'),
         actions: [
           IconButton(
             onPressed: () => _openPreferences(context, ref),
@@ -72,7 +74,7 @@ class NotificationsScreen extends ConsumerWidget {
               itemCount: items.length,
             );
           },
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const AurumCenteredLoader(),
           error: (error, _) => Center(child: Text('Error: $error')),
         ),
       ),
@@ -88,9 +90,9 @@ class NotificationsScreen extends ConsumerWidget {
       );
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo actualizar: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('No se pudo actualizar: $e')));
     }
   }
 
@@ -100,9 +102,9 @@ class NotificationsScreen extends ConsumerWidget {
     AppNotification notification,
   ) async {
     if (!notification.isRead) {
-      await ref.read(notificationsControllerProvider.notifier).markAsRead(
-            notification.id,
-          );
+      await ref
+          .read(notificationsControllerProvider.notifier)
+          .markAsRead(notification.id);
     }
 
     final route = notification.payload['route']?.toString().trim();
@@ -119,9 +121,9 @@ class NotificationsScreen extends ConsumerWidget {
     if (productId == null || productId.isEmpty) return;
 
     try {
-      final product = await ref.read(productRepositoryProvider).getProductById(
-            productId,
-          );
+      final product = await ref
+          .read(productRepositoryProvider)
+          .getProductById(productId);
       if (product == null || !context.mounted) return;
       context.push('/product-detail', extra: product);
     } catch (_) {
@@ -134,10 +136,9 @@ class NotificationsScreen extends ConsumerWidget {
 
   Future<void> _openPreferences(BuildContext context, WidgetRef ref) async {
     final rootContext = context;
-    final basePrefs =
-        await ref.read(notificationPreferencesProvider.future).catchError(
-              (_) => NotificationPreferences.defaults(),
-            );
+    final basePrefs = await ref
+        .read(notificationPreferencesProvider.future)
+        .catchError((_) => NotificationPreferences.defaults());
     if (!rootContext.mounted) return;
 
     var working = basePrefs;
@@ -186,10 +187,10 @@ class NotificationsScreen extends ConsumerWidget {
                         title: const Text('Avisos de favoritos en descuento'),
                         onChanged: working.enabled
                             ? (value) => setModalState(
-                                  () => working = working.copyWith(
-                                    favoriteDiscountEnabled: value,
-                                  ),
-                                )
+                                () => working = working.copyWith(
+                                  favoriteDiscountEnabled: value,
+                                ),
+                              )
                             : null,
                       ),
                       SwitchListTile(
@@ -198,10 +199,10 @@ class NotificationsScreen extends ConsumerWidget {
                         title: const Text('Recomendaciones personalizadas'),
                         onChanged: working.enabled
                             ? (value) => setModalState(
-                                  () => working = working.copyWith(
-                                    recommendationsEnabled: value,
-                                  ),
-                                )
+                                () => working = working.copyWith(
+                                  recommendationsEnabled: value,
+                                ),
+                              )
                             : null,
                       ),
                       const SizedBox(height: 10),
@@ -249,7 +250,9 @@ class NotificationsScreen extends ConsumerWidget {
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: () async {
-                            final start = _normalizeHour(quietStartController.text);
+                            final start = _normalizeHour(
+                              quietStartController.text,
+                            );
                             final end = _normalizeHour(quietEndController.text);
                             if ((quietStartController.text.trim().isNotEmpty &&
                                     start == null) ||
@@ -257,8 +260,9 @@ class NotificationsScreen extends ConsumerWidget {
                                     end == null)) {
                               ScaffoldMessenger.of(rootContext).showSnackBar(
                                 const SnackBar(
-                                  content:
-                                      Text('Formato invalido. Usa HH:MM (ej 22:30)'),
+                                  content: Text(
+                                    'Formato invalido. Usa HH:MM (ej 22:30)',
+                                  ),
                                 ),
                               );
                               return;
@@ -270,12 +274,16 @@ class NotificationsScreen extends ConsumerWidget {
                             );
                             try {
                               await ref
-                                  .read(notificationsControllerProvider.notifier)
+                                  .read(
+                                    notificationsControllerProvider.notifier,
+                                  )
                                   .savePreferences(next);
                               if (!rootContext.mounted) return;
                               Navigator.of(bottomContext).pop();
                               ScaffoldMessenger.of(rootContext).showSnackBar(
-                                const SnackBar(content: Text('Preferencias guardadas')),
+                                const SnackBar(
+                                  content: Text('Preferencias guardadas'),
+                                ),
                               );
                             } catch (e) {
                               if (!rootContext.mounted) return;
@@ -326,10 +334,7 @@ class NotificationsScreen extends ConsumerWidget {
 }
 
 class _NotificationTile extends StatelessWidget {
-  const _NotificationTile({
-    required this.item,
-    required this.onTap,
-  });
+  const _NotificationTile({required this.item, required this.onTap});
 
   final AppNotification item;
   final VoidCallback onTap;
@@ -341,13 +346,13 @@ class _NotificationTile extends StatelessWidget {
     final icon = isDiscount
         ? Icons.local_offer_rounded
         : isBroadcast
-            ? Icons.campaign_outlined
-            : Icons.auto_awesome_rounded;
+        ? Icons.campaign_outlined
+        : Icons.auto_awesome_rounded;
     final iconColor = isDiscount
         ? const Color(0xFFB5483F)
         : isBroadcast
-            ? const Color(0xFF3B5CC4)
-            : AppTheme.navyBlue;
+        ? const Color(0xFF3B5CC4)
+        : AppTheme.navyBlue;
 
     return Material(
       color: item.isRead ? Colors.white : const Color(0xFFFFF9E9),

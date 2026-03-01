@@ -5,6 +5,7 @@ import '../../../../core/design_system/widgets/aurum_card.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../providers/admin_provider.dart';
+import '../../../../core/design_system/widgets/aurum_loader.dart';
 
 class AdminDashboardScreen extends ConsumerStatefulWidget {
   const AdminDashboardScreen({
@@ -23,7 +24,8 @@ class AdminDashboardScreen extends ConsumerStatefulWidget {
   final VoidCallback onOpenOrders;
 
   @override
-  ConsumerState<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+  ConsumerState<AdminDashboardScreen> createState() =>
+      _AdminDashboardScreenState();
 }
 
 class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
@@ -56,10 +58,12 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
       future: repo.getDashboardStats(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const AurumCenteredLoader();
         }
         if (snapshot.hasError || !snapshot.hasData) {
-          return Center(child: Text('Error cargando dashboard: ${snapshot.error}'));
+          return Center(
+            child: Text('Error cargando dashboard: ${snapshot.error}'),
+          );
         }
         final data = snapshot.data!;
         return RefreshIndicator(
@@ -213,7 +217,9 @@ class _KpiCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               value,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
             ),
           ],
         ),

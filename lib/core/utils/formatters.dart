@@ -34,6 +34,8 @@ class Formatters {
         return 'Cancelado';
       case 'refunded':
         return 'Reembolsado';
+      case 'returned':
+        return 'Devuelto';
       default:
         return status;
     }

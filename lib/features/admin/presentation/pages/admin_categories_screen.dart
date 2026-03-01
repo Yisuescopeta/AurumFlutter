@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/design_system/widgets/aurum_app_bar_title.dart';
 import '../../../../core/design_system/widgets/aurum_card.dart';
 import '../providers/admin_provider.dart';
+import '../../../../core/design_system/widgets/aurum_loader.dart';
 
 class AdminCategoriesScreen extends ConsumerStatefulWidget {
   const AdminCategoriesScreen({super.key});
@@ -20,13 +22,13 @@ class _AdminCategoriesScreenState extends ConsumerState<AdminCategoriesScreen> {
   Widget build(BuildContext context) {
     final repo = ref.watch(adminRepositoryProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Categorias')),
+      appBar: AppBar(title: const AurumAppBarTitle('Categorias')),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         key: ValueKey(_refreshTick),
         future: repo.getCategories(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const AurumCenteredLoader();
           }
           if (snapshot.hasError) {
             return Center(
@@ -35,7 +37,9 @@ class _AdminCategoriesScreenState extends ConsumerState<AdminCategoriesScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('No se pudieron cargar las categorias: ${snapshot.error}'),
+                    Text(
+                      'No se pudieron cargar las categorias: ${snapshot.error}',
+                    ),
                     const SizedBox(height: 12),
                     ElevatedButton(
                       onPressed: () => setState(() => _refreshTick++),
@@ -73,7 +77,6 @@ class _AdminCategoriesScreenState extends ConsumerState<AdminCategoriesScreen> {
                 ),
               ...categories.map((c) {
                 final name = c['name']?.toString() ?? '-';
-                final slug = c['slug']?.toString() ?? '-';
                 final active = c['is_active'] != false;
                 final desc = c['description']?.toString() ?? '';
                 return Padding(
@@ -90,13 +93,10 @@ class _AdminCategoriesScreenState extends ConsumerState<AdminCategoriesScreen> {
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
                             ),
-                            Chip(
-                              label: Text(active ? 'Activa' : 'Inactiva'),
-                            ),
+                            Chip(label: Text(active ? 'Activa' : 'Inactiva')),
                           ],
                         ),
                         const SizedBox(height: 4),
-                        Text('Slug: $slug'),
                         if (desc.isNotEmpty) ...[
                           const SizedBox(height: 4),
                           Text(desc),
@@ -116,11 +116,8 @@ class _AdminCategoriesScreenState extends ConsumerState<AdminCategoriesScreen> {
   Future<void> _createCategory() async {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController();
-    final slugController = TextEditingController();
     final descriptionController = TextEditingController();
-    final imageController = TextEditingController();
     var isActive = true;
-    var slugEdited = false;
 
     String slugify(String input) {
       final lowered = input.toLowerCase().trim();
@@ -152,34 +149,16 @@ class _AdminCategoriesScreenState extends ConsumerState<AdminCategoriesScreen> {
                           return null;
                         },
                         onChanged: (value) {
-                          if (!slugEdited) {
-                            slugController.text = slugify(value);
-                          }
+                          setModalState(() {});
                         },
-                      ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: slugController,
-                        decoration: const InputDecoration(labelText: 'Slug'),
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'Requerido';
-                          if (!RegExp(r'^[a-z0-9-]+$').hasMatch(v.trim())) {
-                            return 'Solo minusculas, numeros y guion';
-                          }
-                          return null;
-                        },
-                        onChanged: (_) => slugEdited = true,
                       ),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: descriptionController,
-                        decoration: const InputDecoration(labelText: 'Descripcion'),
+                        decoration: const InputDecoration(
+                          labelText: 'Descripcion',
+                        ),
                         maxLines: 3,
-                      ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: imageController,
-                        decoration: const InputDecoration(labelText: 'URL imagen'),
                       ),
                       const SizedBox(height: 8),
                       SwitchListTile(
@@ -201,11 +180,16 @@ class _AdminCategoriesScreenState extends ConsumerState<AdminCategoriesScreen> {
                   onPressed: () async {
                     if (!formKey.currentState!.validate()) return;
                     try {
-                      await ref.read(adminRepositoryProvider).createCategory(
+                      final slugBase = slugify(nameController.text);
+                      if (slugBase.isEmpty) {
+                        throw Exception('No se pudo generar un slug valido');
+                      }
+
+                      await ref
+                          .read(adminRepositoryProvider)
+                          .createCategory(
                             name: nameController.text,
-                            slug: slugController.text,
                             description: descriptionController.text,
-                            imageUrl: imageController.text,
                             isActive: isActive,
                           );
                       if (!modalContext.mounted) return;
@@ -215,9 +199,9 @@ class _AdminCategoriesScreenState extends ConsumerState<AdminCategoriesScreen> {
                       final msg = (e.code == '23505')
                           ? 'Ya existe una categoria con ese slug'
                           : 'No se pudo crear: ${e.message}';
-                      ScaffoldMessenger.of(modalContext).showSnackBar(
-                        SnackBar(content: Text(msg)),
-                      );
+                      ScaffoldMessenger.of(
+                        modalContext,
+                      ).showSnackBar(SnackBar(content: Text(msg)));
                     } catch (e) {
                       if (!modalContext.mounted) return;
                       ScaffoldMessenger.of(modalContext).showSnackBar(
@@ -236,9 +220,9 @@ class _AdminCategoriesScreenState extends ConsumerState<AdminCategoriesScreen> {
 
     if (created == true && mounted) {
       setState(() => _refreshTick++);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Categoria creada')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Categoria creada')));
     }
   }
 }
