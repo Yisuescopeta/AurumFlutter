@@ -1,0 +1,87 @@
+name: aurum_app
+description: "Aurum Fashion Market - Tienda de moda masculina de lujo"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Core
+  cupertino_icons: ^1.0.8
+  
+  # Estado y arquitectura
+  flutter_riverpod: ^2.4.9
+  riverpod_annotation: ^2.3.3
+  go_router: ^12.1.3
+  
+  # Supabase y backend
+  supabase_flutter: ^2.3.4
+  
+  # Stripe y pagos
+  flutter_stripe: ^11.5.0
+  
+  # UI y componentes
+  cached_network_image: ^3.3.0
+  photo_view: ^0.14.0
+  shimmer: ^3.0.0
+  flutter_svg: ^2.0.9
+  google_fonts: ^6.1.0
+  flutter_animate: ^4.3.0
+  
+  # Utilidades
+  intl: ^0.20.2
+  shared_preferences: ^2.2.2
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  url_launcher: ^6.2.2
+  image_picker: ^1.0.4
+  connectivity_plus: ^5.0.2
+  
+  # Formularios y validación
+  flutter_form_builder: ^10.2.0
+  form_builder_validators: ^11.2.0
+  
+  # Iconos
+  lucide_icons: ^0.141.0
+  
+  # Gráficos y estadísticas (admin)
+  fl_chart: ^0.66.0
+  
+  # Utils
+  equatable: ^2.0.5
+  dartz: ^0.10.1
+  uuid: ^4.3.3
+  http: ^1.2.2
+  flutter_dotenv: ^5.1.0
+  firebase_core: ^4.4.0
+  firebase_messaging: ^16.1.1
+  flutter_local_notifications: ^20.0.0
+  lottie: ^3.3.2
+  font_awesome_flutter: ^10.12.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  riverpod_generator: ^2.3.9
+  build_runner: ^2.4.7
+  hive_generator: ^2.0.1
+  mockito: ^5.4.4
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/animations/
+    - .env
+  
+
