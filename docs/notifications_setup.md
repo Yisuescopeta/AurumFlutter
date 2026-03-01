@@ -107,3 +107,23 @@ Supported template variables:
 - `{{product_name}}`
 - `{{sale_price}}`
 - `{{old_price}}`
+
+## 7) Troubleshooting `404 NOT_FOUND` on admin broadcast
+
+If admin broadcast fails with:
+
+- `FunctionException(status: 404, ... Requested function was not found)`
+
+The active Supabase project does not have this function deployed yet:
+
+- `send-broadcast-notification`
+
+Deploy it:
+
+```bash
+supabase functions deploy send-broadcast-notification
+```
+
+Also verify the app points to the expected project in `.env`:
+
+- `SUPABASE_URL`

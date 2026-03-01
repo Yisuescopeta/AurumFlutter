@@ -1,3 +1,10 @@
+class ProductVariant {
+  const ProductVariant({required this.size, required this.stock});
+
+  final String size;
+  final int stock;
+}
+
 class Product {
   final String id;
   final String name;
@@ -11,6 +18,7 @@ class Product {
   final String categoryId;
   final Map<String, dynamic>? category;
   final dynamic sizes;
+  final List<ProductVariant> variants;
   final bool isActive;
   final DateTime createdAt;
 
@@ -27,6 +35,7 @@ class Product {
     required this.categoryId,
     this.category,
     this.sizes,
+    this.variants = const [],
     this.isActive = true,
     required this.createdAt,
   });
@@ -54,6 +63,21 @@ class Product {
     return <String>[];
   }
 
+  static List<ProductVariant> _parseVariants(dynamic raw) {
+    if (raw is! List) return const [];
+
+    final variants = <ProductVariant>[];
+    for (final row in raw) {
+      if (row is! Map) continue;
+      final map = Map<String, dynamic>.from(row);
+      final size = map['size']?.toString().trim() ?? '';
+      if (size.isEmpty) continue;
+      final stock = (map['stock'] as num?)?.toInt() ?? 0;
+      variants.add(ProductVariant(size: size, stock: stock));
+    }
+    return variants;
+  }
+
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
       id: json['id'] ?? '',
@@ -70,11 +94,47 @@ class Product {
       categoryId: json['category_id'] ?? '',
       category: _parseCategory(json['categories']),
       sizes: json['sizes'],
+      variants: _parseVariants(json['product_variants']),
       isActive: json['is_active'] ?? true,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : DateTime.now(),
     );
+  }
+
+  static List<String> _parseLegacySizes(dynamic raw) {
+    if (raw is List) {
+      return raw
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty)
+          .toSet()
+          .toList();
+    }
+
+    if (raw is Map) {
+      final sizesMap = Map<dynamic, dynamic>.from(raw);
+      return sizesMap.keys
+          .map((key) => key.toString().trim())
+          .where((key) => key.isNotEmpty)
+          .toSet()
+          .toList();
+    }
+
+    return const [];
+  }
+
+  List<String> get availableSizes {
+    if (variants.isNotEmpty) {
+      return variants
+          .map((variant) => variant.size.trim())
+          .where((size) => size.isNotEmpty)
+          .toSet()
+          .toList();
+    }
+
+    final legacy = _parseLegacySizes(sizes);
+    if (legacy.isNotEmpty) return legacy;
+    return const ['Unica'];
   }
 
   double get currentPrice => isOnSale && salePrice != null ? salePrice! : price;

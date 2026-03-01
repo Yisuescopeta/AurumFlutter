@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../features/auth/presentation/pages/login_screen.dart';
+import '../../features/auth/presentation/pages/register_screen.dart';
 import '../../features/auth/presentation/pages/onboarding_screen.dart';
 import '../../features/auth/presentation/pages/splash_screen.dart';
 import '../../features/shared/presentation/pages/main_screen.dart';
@@ -48,6 +49,10 @@ final appRouter = GoRouter(
       builder: (context, state) => const OnboardingScreen(),
     ),
     GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+    GoRoute(
+      path: '/register',
+      builder: (context, state) => const RegisterScreen(),
+    ),
     GoRoute(path: '/home', builder: (context, state) => const MainScreen()),
     GoRoute(
       path: '/favorites',

@@ -25,6 +25,14 @@ class _AdminNotificationsScreenState
   bool _savingTemplate = false;
   bool _templateLoaded = false;
 
+  String _friendlyError(Object error) {
+    final raw = error.toString().trim();
+    if (raw.startsWith('Exception:')) {
+      return raw.substring('Exception:'.length).trim();
+    }
+    return raw;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -166,7 +174,9 @@ class _AdminNotificationsScreenState
       if (!mounted) return;
       setState(() => _templateLoaded = true);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo cargar la plantilla: $error')),
+        SnackBar(
+          content: Text('No se pudo cargar la plantilla: ${_friendlyError(error)}'),
+        ),
       );
     }
   }
@@ -195,7 +205,9 @@ class _AdminNotificationsScreenState
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error enviando notificacion: $error')),
+        SnackBar(
+          content: Text('Error enviando notificacion: ${_friendlyError(error)}'),
+        ),
       );
     } finally {
       if (mounted) setState(() => _sendingBroadcast = false);
@@ -217,7 +229,9 @@ class _AdminNotificationsScreenState
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error guardando plantilla: $error')),
+        SnackBar(
+          content: Text('Error guardando plantilla: ${_friendlyError(error)}'),
+        ),
       );
     } finally {
       if (mounted) setState(() => _savingTemplate = false);

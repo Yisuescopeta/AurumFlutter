@@ -34,6 +34,7 @@ class AdminRepository {
 
   final SupabaseClient _supabase;
   static const _productImagesBucket = 'product-images';
+  static const _sendBroadcastNotificationFunction = 'send-broadcast-notification';
   final _random = Random();
 
   List<Map<String, dynamic>> _asMapList(dynamic raw) {
@@ -530,14 +531,33 @@ class AdminRepository {
   Future<Map<String, dynamic>> sendBroadcastNotification(
     Map<String, dynamic> payload,
   ) async {
-    final res = await _supabase.functions.invoke(
-      'send-broadcast-notification',
-      body: payload,
-    );
-    if (res.data is! Map) {
-      throw Exception('Respuesta invalida del envio de notificaciones');
+    try {
+      final res = await _supabase.functions.invoke(
+        _sendBroadcastNotificationFunction,
+        body: payload,
+      );
+      if (res.data is! Map) {
+        throw Exception('Respuesta invalida del envio de notificaciones');
+      }
+      return Map<String, dynamic>.from(res.data as Map);
+    } on FunctionException catch (e) {
+      if (e.status == 404) {
+        throw Exception(
+          'La funcion "$_sendBroadcastNotificationFunction" no existe en el proyecto Supabase activo. '
+          'Despliegala con: supabase functions deploy $_sendBroadcastNotificationFunction',
+        );
+      }
+      if (e.details is Map && (e.details as Map).containsKey('error')) {
+        final message = (e.details as Map)['error']?.toString().trim() ?? '';
+        if (message.isNotEmpty) throw Exception(message);
+      }
+      final reason = (e.reasonPhrase ?? '').trim();
+      throw Exception(
+        reason.isEmpty
+            ? 'No se pudo enviar la notificacion (HTTP ${e.status}).'
+            : 'No se pudo enviar la notificacion: $reason (HTTP ${e.status}).',
+      );
     }
-    return Map<String, dynamic>.from(res.data as Map);
   }
 
   Future<Map<String, String>> getFavoriteDiscountTemplate() async {

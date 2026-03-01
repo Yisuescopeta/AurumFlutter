@@ -4,6 +4,8 @@ import '../../domain/models/product.dart';
 
 class ProductRepository {
   final SupabaseClient _supabase;
+  static const _productSelect =
+      '*, categories(name, slug), product_variants(size, stock)';
 
   ProductRepository(this._supabase);
 
@@ -11,7 +13,8 @@ class ProductRepository {
     final map = Map<String, dynamic>.from(input);
     map['images'] = normalizeProductImages(
       map['images'],
-      toPublicUrl: (path) => _supabase.storage.from('product-images').getPublicUrl(path),
+      toPublicUrl: (path) =>
+          _supabase.storage.from('product-images').getPublicUrl(path),
     );
     return map;
   }
@@ -28,7 +31,7 @@ class ProductRepository {
   Future<List<Product>> getProducts() async {
     final response = await _supabase
         .from('products')
-        .select('*, categories(name, slug)')
+        .select(_productSelect)
         .eq('is_active', true)
         .order('created_at', ascending: false);
 
@@ -38,7 +41,7 @@ class ProductRepository {
   Future<List<Product>> getNewArrivals({int limit = 10}) async {
     final response = await _supabase
         .from('products')
-        .select('*, categories(name, slug)')
+        .select(_productSelect)
         .eq('is_active', true)
         .order('created_at', ascending: false)
         .limit(limit);
@@ -49,7 +52,7 @@ class ProductRepository {
   Future<List<Product>> getFlashOffers({int limit = 8}) async {
     final response = await _supabase
         .from('products')
-        .select('*, categories(name, slug)')
+        .select(_productSelect)
         .eq('is_active', true)
         .eq('is_on_sale', true)
         .not('sale_price', 'is', null)
@@ -71,7 +74,7 @@ class ProductRepository {
     if (categoryId.trim().isNotEmpty) {
       final sameCategory = await _supabase
           .from('products')
-          .select('*, categories(name, slug)')
+          .select(_productSelect)
           .eq('is_active', true)
           .eq('category_id', categoryId)
           .neq('id', productId)
@@ -86,7 +89,7 @@ class ProductRepository {
 
     final fallback = await _supabase
         .from('products')
-        .select('*, categories(name, slug)')
+        .select(_productSelect)
         .eq('is_active', true)
         .neq('id', productId)
         .order('created_at', ascending: false)
@@ -95,9 +98,7 @@ class ProductRepository {
     final fallbackProducts = _toProducts(fallback);
     final merged = <Product>[
       ...related,
-      ...fallbackProducts.where(
-        (p) => related.every((r) => r.id != p.id),
-      ),
+      ...fallbackProducts.where((p) => related.every((r) => r.id != p.id)),
     ];
 
     return merged.take(limit).toList();
@@ -106,7 +107,7 @@ class ProductRepository {
   Future<Product?> getProductById(String productId) async {
     final response = await _supabase
         .from('products')
-        .select('*, categories(name, slug)')
+        .select(_productSelect)
         .eq('id', productId)
         .eq('is_active', true)
         .maybeSingle();

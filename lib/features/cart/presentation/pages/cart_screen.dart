@@ -80,7 +80,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     return Scaffold(
       backgroundColor: AppTheme.lightGrey,
       appBar: AppBar(
-        title: Text(AppStrings.carrito, style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold)),
+        title: Text(
+          AppStrings.carrito,
+          style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
+        ),
       ),
       body: cart.items.isEmpty
           ? AurumEmptyState(
@@ -96,7 +99,9 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   child: ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
-                      ...cart.items.map((item) => _CartItemTile(itemId: item.id)),
+                      ...cart.items.map(
+                        (item) => _CartItemTile(itemId: item.id),
+                      ),
                       const SizedBox(height: 10),
                       _buildCouponCard(cart),
                       const SizedBox(height: 12),
@@ -155,62 +160,88 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-              Text(AppStrings.datosEnvio, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16)),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(labelText: AppStrings.correo),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) return 'Introduce un correo';
-                  if (!value.contains('@')) return 'Correo invalido';
-                  return null;
-                },
+            Text(
+              AppStrings.datosEnvio,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
               ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _fullNameController,
-                decoration: const InputDecoration(labelText: AppStrings.nombreCompleto),
-                validator: (value) => value == null || value.trim().isEmpty ? 'Campo obligatorio' : null,
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(labelText: AppStrings.correo),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Introduce un correo';
+                }
+                if (!value.contains('@')) return 'Correo invalido';
+                return null;
+              },
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _fullNameController,
+              decoration: const InputDecoration(
+                labelText: AppStrings.nombreCompleto,
               ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _phoneController,
-                decoration: const InputDecoration(labelText: AppStrings.telefono),
-                validator: (value) => value == null || value.trim().isEmpty ? 'Campo obligatorio' : null,
+              validator: (value) => value == null || value.trim().isEmpty
+                  ? 'Campo obligatorio'
+                  : null,
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _phoneController,
+              decoration: const InputDecoration(labelText: AppStrings.telefono),
+              validator: (value) => value == null || value.trim().isEmpty
+                  ? 'Campo obligatorio'
+                  : null,
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _addressController,
+              decoration: const InputDecoration(
+                labelText: AppStrings.direccion,
               ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _addressController,
-                decoration: const InputDecoration(labelText: AppStrings.direccion),
-                validator: (value) => value == null || value.trim().isEmpty ? 'Campo obligatorio' : null,
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _cityController,
-                      decoration: const InputDecoration(labelText: AppStrings.ciudad),
-                      validator: (value) => value == null || value.trim().isEmpty ? 'Campo obligatorio' : null,
+              validator: (value) => value == null || value.trim().isEmpty
+                  ? 'Campo obligatorio'
+                  : null,
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _cityController,
+                    decoration: const InputDecoration(
+                      labelText: AppStrings.ciudad,
                     ),
+                    validator: (value) => value == null || value.trim().isEmpty
+                        ? 'Campo obligatorio'
+                        : null,
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _postalCodeController,
-                      decoration: const InputDecoration(labelText: AppStrings.codigoPostal),
-                      validator: (value) => value == null || value.trim().isEmpty ? 'Campo obligatorio' : null,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextFormField(
+                    controller: _postalCodeController,
+                    decoration: const InputDecoration(
+                      labelText: AppStrings.codigoPostal,
                     ),
+                    validator: (value) => value == null || value.trim().isEmpty
+                        ? 'Campo obligatorio'
+                        : null,
                   ),
-                ],
-              ),
-              CheckboxListTile(
-                value: _saveInfo,
-                contentPadding: EdgeInsets.zero,
-                title: const Text(AppStrings.guardarDatos),
-                onChanged: (value) => setState(() => _saveInfo = value ?? true),
-              ),
+                ),
+              ],
+            ),
+            CheckboxListTile(
+              value: _saveInfo,
+              contentPadding: EdgeInsets.zero,
+              title: const Text(AppStrings.guardarDatos),
+              onChanged: (value) => setState(() => _saveInfo = value ?? true),
+            ),
           ],
         ),
       ),
@@ -226,16 +257,25 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       padding: const EdgeInsets.all(12),
       child: Column(
         children: [
-            _SummaryRow(label: AppStrings.subtotal, value: Formatters.euro(subtotal)),
-            _SummaryRow(label: AppStrings.descuento, value: '-${Formatters.euro(discount)}'),
-            _SummaryRow(label: AppStrings.gastosEnvio, value: Formatters.euro(shipping)),
-            const Divider(height: 16),
-            _SummaryRow(
-              label: AppStrings.totalPagar,
-              value: Formatters.euro(total),
-              isTotal: true,
-            ),
-          ],
+          _SummaryRow(
+            label: AppStrings.subtotal,
+            value: Formatters.euro(subtotal),
+          ),
+          _SummaryRow(
+            label: AppStrings.descuento,
+            value: '-${Formatters.euro(discount)}',
+          ),
+          _SummaryRow(
+            label: AppStrings.gastosEnvio,
+            value: Formatters.euro(shipping),
+          ),
+          const Divider(height: 16),
+          _SummaryRow(
+            label: AppStrings.totalPagar,
+            value: Formatters.euro(total),
+            isTotal: true,
+          ),
+        ],
       ),
     );
   }
@@ -245,31 +285,35 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     if (code.isEmpty) return;
 
     try {
-      final result = await ref.read(couponRepositoryProvider).validateCoupon(
-            code: code,
-            cartTotal: cart.subtotalCents,
-          );
+      final result = await ref
+          .read(couponRepositoryProvider)
+          .validateCoupon(code: code, cartTotal: cart.subtotalCents);
 
       if (!mounted) return;
       if (!result.valid) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result.error ?? 'No se pudo validar el cupon')),
+          SnackBar(
+            content: Text(result.error ?? 'No se pudo validar el cupon'),
+          ),
         );
         return;
       }
 
       ref
           .read(cartControllerProvider.notifier)
-          .applyCoupon(code: result.code ?? code, discountCents: result.discountAmount);
+          .applyCoupon(
+            code: result.code ?? code,
+            discountCents: result.discountAmount,
+          );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(AppStrings.cuponAplicado)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text(AppStrings.cuponAplicado)));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error de cupon: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error de cupon: $e')));
     }
   }
 
@@ -294,7 +338,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       cart.items.map((e) => (e.productId, e.size)).toList(),
     );
 
-    final invalid = cart.items.any((item) => item.quantity > (stock[item.id] ?? 0));
+    final invalid = cart.items.any((item) {
+      final key = buildVariantKey(productId: item.productId, size: item.size);
+      return item.quantity > (stock[key] ?? 0);
+    });
     if (invalid) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -333,9 +380,8 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         result.paymentIntentId,
       );
       if (!orderReady) {
-        final confirmed = await CheckoutService.instance.confirmOrderFromPaymentIntent(
-          result.paymentIntentId,
-        );
+        final confirmed = await CheckoutService.instance
+            .confirmOrderFromPaymentIntent(result.paymentIntentId);
         if (confirmed) {
           orderReady = await CheckoutService.instance.waitForOrderCreation(
             result.paymentIntentId,
@@ -365,14 +411,14 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       if (!mounted) return;
       _couponController.clear();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(AppStrings.compraExitosa)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text(AppStrings.compraExitosa)));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${AppStrings.pagoError}: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('${AppStrings.pagoError}: $e')));
     } finally {
       ref.read(cartControllerProvider.notifier).setLoading(false);
     }
@@ -407,88 +453,104 @@ class _CartItemTile extends ConsumerWidget {
       padding: const EdgeInsets.all(10),
       child: Row(
         children: [
-            SizedBox(
-              width: 72,
-              height: 72,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: (item.image?.isNotEmpty ?? false)
-                    ? CachedNetworkImage(
-                        imageUrl: item.image!,
-                        fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => const Icon(Icons.checkroom),
-                      )
-                    : const DecoratedBox(
-                        decoration: BoxDecoration(color: Color(0xFFF2F2F2)),
-                        child: Icon(Icons.checkroom),
-                      ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(item.name, maxLines: 2, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 2),
-                  Text('Talla: ${item.size}', style: const TextStyle(color: Colors.black54, fontSize: 12)),
-                  const SizedBox(height: 2),
-                  Text(
-                    stockLabel,
-                    style: TextStyle(
-                      color: stockAsync.hasError ? Colors.red[700] : Colors.black54,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+          SizedBox(
+            width: 72,
+            height: 72,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: (item.image?.isNotEmpty ?? false)
+                  ? CachedNetworkImage(
+                      imageUrl: item.image!,
+                      fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => const Icon(Icons.checkroom),
+                    )
+                  : const DecoratedBox(
+                      decoration: BoxDecoration(color: Color(0xFFF2F2F2)),
+                      child: Icon(Icons.checkroom),
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    Formatters.euro(item.unitPriceCents / 100),
-                    style: const TextStyle(color: AppTheme.gold, fontWeight: FontWeight.w700),
-                  ),
-                ],
-              ),
             ),
-            Column(
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                IconButton(
-                  onPressed: () => ref.read(cartControllerProvider.notifier).removeItem(item.id),
-                  icon: const Icon(Icons.delete_outline, size: 20),
+                Text(item.name, maxLines: 2, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 2),
+                Text(
+                  'Talla: ${item.size}',
+                  style: const TextStyle(color: Colors.black54, fontSize: 12),
                 ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      onPressed: () => ref
-                          .read(cartControllerProvider.notifier)
-                          .setQuantity(item.id, item.quantity - 1),
-                      icon: const Icon(Icons.remove_circle_outline),
-                    ),
-                    Text('${item.quantity}'),
-                    IconButton(
-                      onPressed: canIncrease
-                          ? () {
-                              ref.read(cartControllerProvider.notifier).setQuantity(
-                                    item.id,
-                                    item.quantity + 1,
-                                    maxStock: stockValue,
-                                  );
-                            }
-                          : null,
-                      icon: const Icon(Icons.add_circle_outline),
-                    ),
-                  ],
+                const SizedBox(height: 2),
+                Text(
+                  stockLabel,
+                  style: TextStyle(
+                    color: stockAsync.hasError
+                        ? Colors.red[700]
+                        : Colors.black54,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  Formatters.euro(item.unitPriceCents / 100),
+                  style: const TextStyle(
+                    color: AppTheme.gold,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ],
             ),
-          ],
+          ),
+          Column(
+            children: [
+              IconButton(
+                onPressed: () => ref
+                    .read(cartControllerProvider.notifier)
+                    .removeItem(item.id),
+                icon: const Icon(Icons.delete_outline, size: 20),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    onPressed: () => ref
+                        .read(cartControllerProvider.notifier)
+                        .setQuantity(item.id, item.quantity - 1),
+                    icon: const Icon(Icons.remove_circle_outline),
+                  ),
+                  Text('${item.quantity}'),
+                  IconButton(
+                    onPressed: canIncrease
+                        ? () {
+                            ref
+                                .read(cartControllerProvider.notifier)
+                                .setQuantity(
+                                  item.id,
+                                  item.quantity + 1,
+                                  maxStock: stockValue,
+                                );
+                          }
+                        : null,
+                    icon: const Icon(Icons.add_circle_outline),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
 class _SummaryRow extends StatelessWidget {
-  const _SummaryRow({required this.label, required this.value, this.isTotal = false});
+  const _SummaryRow({
+    required this.label,
+    required this.value,
+    this.isTotal = false,
+  });
 
   final String label;
   final String value;
@@ -505,7 +567,10 @@ class _SummaryRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [Text(label, style: style), Text(value, style: style)],
+        children: [
+          Text(label, style: style),
+          Text(value, style: style),
+        ],
       ),
     );
   }

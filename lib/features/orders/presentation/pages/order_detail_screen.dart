@@ -2,20 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../application/services/order_invoice_pdf_service.dart';
+import '../../domain/models/order.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/design_system/widgets/aurum_card.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../providers/orders_provider.dart';
 
-class OrderDetailScreen extends ConsumerWidget {
+class OrderDetailScreen extends ConsumerStatefulWidget {
   const OrderDetailScreen({super.key, required this.orderId});
 
   final String orderId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final detailAsync = ref.watch(orderDetailProvider(orderId));
+  ConsumerState<OrderDetailScreen> createState() => _OrderDetailScreenState();
+}
+
+class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
+  bool _creatingOrderInvoice = false;
+  bool _creatingRefundInvoice = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final detailAsync = ref.watch(orderDetailProvider(widget.orderId));
 
     return Scaffold(
       backgroundColor: AppTheme.lightGrey,
@@ -94,10 +104,61 @@ class OrderDetailScreen extends ConsumerWidget {
                       .toList(),
                 ),
               ),
+              const SizedBox(height: 12),
+              _SectionCard(
+                title: 'Documentos',
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _creatingOrderInvoice
+                            ? null
+                            : () => _downloadInvoice(detail),
+                        icon: _creatingOrderInvoice
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.download_outlined),
+                        label: Text(
+                          _creatingOrderInvoice
+                              ? 'Generando factura...'
+                              : 'Descargar factura',
+                        ),
+                      ),
+                    ),
+                    if (_canDownloadRefundInvoice(order)) ...[
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _creatingRefundInvoice
+                              ? null
+                              : () => _downloadRefundInvoice(detail),
+                          icon: _creatingRefundInvoice
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.assignment_return_outlined),
+                          label: Text(
+                            _creatingRefundInvoice
+                                ? 'Generando factura de devolucion...'
+                                : 'Descargar factura de devolucion',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
               if (order.status == 'paid' || order.status == 'delivered') ...[
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: () => _refundOrder(context, ref, order.id),
+                  onPressed: () => _refundOrder(context, order.id),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red.shade100,
                     foregroundColor: Colors.red.shade900,
@@ -115,7 +176,43 @@ class OrderDetailScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _refundOrder(BuildContext context, WidgetRef ref, String orderId) async {
+  bool _canDownloadRefundInvoice(OrderModel order) {
+    return order.status == 'refunded' ||
+        order.refundStatus == 'completed' ||
+        order.refundedAt != null;
+  }
+
+  Future<void> _downloadInvoice(OrderDetail detail) async {
+    if (_creatingOrderInvoice) return;
+    setState(() => _creatingOrderInvoice = true);
+    try {
+      await OrderInvoicePdfService.openOrderInvoicePreview(detail: detail);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo generar la factura: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _creatingOrderInvoice = false);
+    }
+  }
+
+  Future<void> _downloadRefundInvoice(OrderDetail detail) async {
+    if (_creatingRefundInvoice) return;
+    setState(() => _creatingRefundInvoice = true);
+    try {
+      await OrderInvoicePdfService.openRefundInvoicePreview(detail: detail);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo generar la factura de devolucion: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _creatingRefundInvoice = false);
+    }
+  }
+
+  Future<void> _refundOrder(BuildContext context, String orderId) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(

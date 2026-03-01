@@ -57,7 +57,10 @@
   static const pedidosVacio = 'No hay pedidos para mostrar';
 
   // Product
-  static const nuevaColeccion = 'NUEVA COLECCION';
+  static const nuevaColeccion = 'NUEVA COLECCIÓN';
+  static const coleccionEpocaDorada = 'Colección Época Dorada';
+  static const descripHeroInicio =
+      'Descubre la elegancia atemporal de nuestra última selección editorial para el hombre moderno.';
   static const esencialesVerano = 'ESENCIALES\nDE VERANO';
   static const comprarAhora = 'COMPRAR AHORA';
   static const novedades = 'Novedades';

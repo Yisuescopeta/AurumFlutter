@@ -21,7 +21,8 @@ class ProductDetailScreen extends ConsumerStatefulWidget {
   final Product product;
 
   @override
-  ConsumerState<ProductDetailScreen> createState() => _ProductDetailScreenState();
+  ConsumerState<ProductDetailScreen> createState() =>
+      _ProductDetailScreenState();
 }
 
 class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
@@ -33,18 +34,16 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final p = widget.product;
-    final availableSizes = _getAvailableSizes(p);
-    final favoriteIds = ref.watch(favoriteIdsProvider).valueOrNull ?? <String>{};
+    final availableSizes = p.availableSizes;
+    final favoriteIds =
+        ref.watch(favoriteIdsProvider).valueOrNull ?? <String>{};
     final isFavorite = favoriteIds.contains(p.id);
     final loadingIds = ref.watch(favoriteToggleLoadingProvider);
     final isLoadingFavorite = loadingIds.contains(p.id);
     final selectedSize = _selectedSize;
     final quantityInCart = selectedSize == null
         ? 0
-        : _currentQuantityInCart(
-            productId: p.id,
-            size: selectedSize,
-          );
+        : _currentQuantityInCart(productId: p.id, size: selectedSize);
     final stockAsync = selectedSize == null
         ? const AsyncValue<int>.data(0)
         : ref.watch(
@@ -54,9 +53,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       final remaining = stock - quantityInCart;
       return remaining < 0 ? 0 : remaining;
     });
-    final canAddToCart = selectedSize != null &&
+    final canAddToCart =
+        selectedSize != null &&
         !_isAdding &&
-        remainingAsync.maybeWhen(data: (remaining) => remaining > 0, orElse: () => false);
+        remainingAsync.maybeWhen(
+          data: (remaining) => remaining > 0,
+          orElse: () => false,
+        );
     final canIncreaseQty = remainingAsync.maybeWhen(
       data: (remaining) => _selectedQuantity < remaining,
       orElse: () => false,
@@ -88,7 +91,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         imageUrl: p.images[index],
                         fit: BoxFit.cover,
                         errorWidget: (_, __, ___) => const Center(
-                          child: Icon(Icons.checkroom, size: 48, color: Colors.grey),
+                          child: Icon(
+                            Icons.checkroom,
+                            size: 48,
+                            color: Colors.grey,
+                          ),
                         ),
                       );
                     },
@@ -142,7 +149,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           const SizedBox(height: 8),
                           if (p.category != null)
                             Text(
-                              p.category?['name']?.toString().toUpperCase() ?? '',
+                              p.category?['name']?.toString().toUpperCase() ??
+                                  '',
                               style: GoogleFonts.inter(
                                 fontSize: 12,
                                 letterSpacing: 2,
@@ -158,7 +166,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         isFavorite ? Icons.favorite : Icons.favorite_border,
                         color: isFavorite ? Colors.red : AppTheme.navyBlue,
                       ),
-                      onPressed: isLoadingFavorite ? null : () => _toggleFavorite(p.id),
+                      onPressed: isLoadingFavorite
+                          ? null
+                          : () => _toggleFavorite(p.id),
                     ),
                   ],
                 ),
@@ -231,8 +241,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         height: 60,
                         decoration: BoxDecoration(
                           border: Border.all(
-                            color:
-                                isSelected ? AppTheme.navyBlue : Colors.grey[300]!,
+                            color: isSelected
+                                ? AppTheme.navyBlue
+                                : Colors.grey[300]!,
                             width: 2,
                           ),
                           color: isSelected ? AppTheme.navyBlue : Colors.white,
@@ -242,7 +253,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           child: Text(
                             size,
                             style: GoogleFonts.inter(
-                              color: isSelected ? Colors.white : AppTheme.navyBlue,
+                              color: isSelected
+                                  ? Colors.white
+                                  : AppTheme.navyBlue,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -328,7 +341,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     children: [
                       _InfoRow(
                         title: AppStrings.materialTitulo,
-                        value: (p.material == null || p.material!.trim().isEmpty)
+                        value:
+                            (p.material == null || p.material!.trim().isEmpty)
                             ? AppStrings.materialNoEspecificado
                             : p.material!,
                       ),
@@ -377,8 +391,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     height: 120,
                     child: Center(
                       child: TextButton(
-                        onPressed: () =>
-                            ref.invalidate(relatedProductsProvider(relatedRequest)),
+                        onPressed: () => ref.invalidate(
+                          relatedProductsProvider(relatedRequest),
+                        ),
                         child: const Text(AppStrings.reintentarCarga),
                       ),
                     ),
@@ -417,12 +432,12 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     selectedSize == null
                         ? AppStrings.seleccionarTalla
                         : remainingAsync.isLoading
-                            ? AppStrings.comprobandoStock
-                            : remainingAsync.hasError
-                                ? AppStrings.stockNoDisponible
-                                : canAddToCart
-                                    ? '${AppStrings.anadirCarrito} (${_selectedQuantity}x)'
-                                    : AppStrings.sinStock,
+                        ? AppStrings.comprobandoStock
+                        : remainingAsync.hasError
+                        ? AppStrings.stockNoDisponible
+                        : canAddToCart
+                        ? '${AppStrings.anadirCarrito} (${_selectedQuantity}x)'
+                        : AppStrings.sinStock,
                     style: GoogleFonts.inter(fontWeight: FontWeight.bold),
                   ),
           ),
@@ -431,34 +446,23 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     );
   }
 
-  List<String> _getAvailableSizes(Product p) {
-    if (p.sizes == null) return ['Unica'];
-    if (p.sizes is List) {
-      return (p.sizes as List).map((e) => e.toString()).toList();
-    }
-    if (p.sizes is Map) {
-      final sizesMap = p.sizes as Map<dynamic, dynamic>;
-      return sizesMap.keys
-          .where(
-            (k) => (sizesMap[k] as num?) != null && (sizesMap[k] as num) > 0,
-          )
-          .map((k) => k.toString())
-          .toList();
-    }
-    return ['Unica'];
-  }
-
-  int _currentQuantityInCart({required String productId, required String size}) {
+  int _currentQuantityInCart({
+    required String productId,
+    required String size,
+  }) {
+    final normalized = normalizeVariantSize(size);
     final cart = ref.read(cartControllerProvider);
     return cart.items
-        .where((item) => item.productId == productId && item.size == size)
+        .where((item) => item.productId == productId)
+        .where((item) => normalizeVariantSize(item.size) == normalized)
         .fold<int>(0, (sum, item) => sum + item.quantity);
   }
 
   Future<void> _toggleFavorite(String productId) async {
     try {
-      final result =
-          await ref.read(favoriteToggleControllerProvider.notifier).toggle(productId);
+      final result = await ref
+          .read(favoriteToggleControllerProvider.notifier)
+          .toggle(productId);
       if (!mounted || result == null) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -479,9 +483,12 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
   Future<void> _addToCart() async {
     final product = widget.product;
-    final size = _selectedSize ?? 'Unica';
+    final size = normalizeVariantSize(_selectedSize ?? 'Unica');
     final stockRepository = ref.read(cartStockRepositoryProvider);
-    final quantityInCart = _currentQuantityInCart(productId: product.id, size: size);
+    final quantityInCart = _currentQuantityInCart(
+      productId: product.id,
+      size: size,
+    );
 
     setState(() => _isAdding = true);
     try {
@@ -492,13 +499,15 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       final remaining = stock - quantityInCart;
       if (remaining <= 0) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(AppStrings.sinStock)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text(AppStrings.sinStock)));
         return;
       }
 
-      final quantityToAdd = _selectedQuantity > remaining ? remaining : _selectedQuantity;
+      final quantityToAdd = _selectedQuantity > remaining
+          ? remaining
+          : _selectedQuantity;
       final cartItem = CartItem(
         productId: product.id,
         name: product.name,
@@ -524,9 +533,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            '${AppStrings.productoAnadidoCarrito}: $quantityToAdd',
-          ),
+          content: Text('${AppStrings.productoAnadidoCarrito}: $quantityToAdd'),
           action: SnackBarAction(
             label: AppStrings.carrito,
             onPressed: () => context.go('/home'),
@@ -544,8 +551,18 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       (size: 'XS', pecho: '80-84 cm', cintura: '60-64 cm', cadera: '86-90 cm'),
       (size: 'S', pecho: '84-88 cm', cintura: '64-68 cm', cadera: '90-94 cm'),
       (size: 'M', pecho: '88-94 cm', cintura: '68-74 cm', cadera: '94-100 cm'),
-      (size: 'L', pecho: '94-100 cm', cintura: '74-80 cm', cadera: '100-106 cm'),
-      (size: 'XL', pecho: '100-106 cm', cintura: '80-86 cm', cadera: '106-112 cm'),
+      (
+        size: 'L',
+        pecho: '94-100 cm',
+        cintura: '74-80 cm',
+        cadera: '100-106 cm',
+      ),
+      (
+        size: 'XL',
+        pecho: '100-106 cm',
+        cintura: '80-86 cm',
+        cadera: '106-112 cm',
+      ),
     ];
 
     await showModalBottomSheet<void>(
@@ -691,9 +708,7 @@ class _InfoRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Expanded(
-          child: Text(value),
-        ),
+        Expanded(child: Text(value)),
       ],
     );
   }
@@ -722,13 +737,21 @@ class _RelatedProductCard extends StatelessWidget {
                 clipBehavior: Clip.antiAlias,
                 child: product.images.isEmpty
                     ? const Center(
-                        child: Icon(Icons.checkroom, size: 46, color: Colors.grey),
+                        child: Icon(
+                          Icons.checkroom,
+                          size: 46,
+                          color: Colors.grey,
+                        ),
                       )
                     : CachedNetworkImage(
                         imageUrl: product.images.first,
                         fit: BoxFit.cover,
                         errorWidget: (_, __, ___) => const Center(
-                          child: Icon(Icons.checkroom, size: 46, color: Colors.grey),
+                          child: Icon(
+                            Icons.checkroom,
+                            size: 46,
+                            color: Colors.grey,
+                          ),
                         ),
                       ),
               ),

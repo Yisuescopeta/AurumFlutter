@@ -54,9 +54,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen> {
             tooltip: AppStrings.ordenar,
           ),
           IconButton(
-            onPressed: productsAsync.isLoading
-                ? null
-                : _showFiltersBottomSheet,
+            onPressed: productsAsync.isLoading ? null : _showFiltersBottomSheet,
             icon: const Icon(Icons.tune_rounded),
             tooltip: AppStrings.filtros,
           ),
@@ -96,7 +94,10 @@ class _StoreScreenState extends ConsumerState<StoreScreen> {
                         color: AppTheme.gold,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.storefront_rounded, color: AppTheme.navyBlue),
+                      child: const Icon(
+                        Icons.storefront_rounded,
+                        color: AppTheme.navyBlue,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -163,7 +164,8 @@ class _StoreScreenState extends ConsumerState<StoreScreen> {
                       icon: Icons.grid_view_rounded,
                       label: 'Resultados: ${filtered.length}',
                     ),
-                    if (_selectedCategory != null && _selectedCategory!.isNotEmpty)
+                    if (_selectedCategory != null &&
+                        _selectedCategory!.isNotEmpty)
                       _InfoPill(
                         icon: Icons.sell_outlined,
                         label: _selectedCategory!,
@@ -178,11 +180,11 @@ class _StoreScreenState extends ConsumerState<StoreScreen> {
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 0.60,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
+                              crossAxisCount: 2,
+                              childAspectRatio: 0.60,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                            ),
                         itemCount: filtered.length,
                         itemBuilder: (context, index) =>
                             _StoreProductCard(product: filtered[index]),
@@ -212,7 +214,8 @@ class _StoreScreenState extends ConsumerState<StoreScreen> {
       final q = _query.toLowerCase();
       result = result.where((p) {
         final name = p.name.toLowerCase();
-        final categoryName = p.category?['name']?.toString().toLowerCase() ?? '';
+        final categoryName =
+            p.category?['name']?.toString().toLowerCase() ?? '';
         return name.contains(q) || categoryName.contains(q);
       });
     }
@@ -256,14 +259,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen> {
   }
 
   List<String> _extractSizes(Product p) {
-    if (p.sizes == null) return const ['Unica'];
-    if (p.sizes is List) {
-      return (p.sizes as List).map((e) => e.toString()).toList();
-    }
-    if (p.sizes is Map) {
-      return (p.sizes as Map<dynamic, dynamic>).keys.map((e) => e.toString()).toList();
-    }
-    return const ['Unica'];
+    return p.availableSizes;
   }
 
   Future<void> _showSortBottomSheet(BuildContext context) async {
@@ -275,17 +271,23 @@ class _StoreScreenState extends ConsumerState<StoreScreen> {
           children: [
             ListTile(
               title: const Text(AppStrings.recientes),
-              trailing: _sortBy == _SortBy.newest ? const Icon(Icons.check) : null,
+              trailing: _sortBy == _SortBy.newest
+                  ? const Icon(Icons.check)
+                  : null,
               onTap: () => Navigator.of(context).pop(_SortBy.newest),
             ),
             ListTile(
               title: const Text(AppStrings.precioAsc),
-              trailing: _sortBy == _SortBy.priceAsc ? const Icon(Icons.check) : null,
+              trailing: _sortBy == _SortBy.priceAsc
+                  ? const Icon(Icons.check)
+                  : null,
               onTap: () => Navigator.of(context).pop(_SortBy.priceAsc),
             ),
             ListTile(
               title: const Text(AppStrings.precioDesc),
-              trailing: _sortBy == _SortBy.priceDesc ? const Icon(Icons.check) : null,
+              trailing: _sortBy == _SortBy.priceDesc
+                  ? const Icon(Icons.check)
+                  : null,
               onTap: () => Navigator.of(context).pop(_SortBy.priceDesc),
             ),
           ],
@@ -302,12 +304,13 @@ class _StoreScreenState extends ConsumerState<StoreScreen> {
     final products = await ref.read(productsProvider.future);
     if (!mounted) return;
 
-    final categories = products
-        .map((p) => p.category?['name']?.toString().trim() ?? '')
-        .where((v) => v.isNotEmpty)
-        .toSet()
-        .toList()
-      ..sort();
+    final categories =
+        products
+            .map((p) => p.category?['name']?.toString().trim() ?? '')
+            .where((v) => v.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort();
     final sizes = products.expand(_extractSizes).toSet().toList()..sort();
 
     String? tempCategory = _selectedCategory;
@@ -394,7 +397,8 @@ class _StoreScreenState extends ConsumerState<StoreScreen> {
                         '${tempRange.start.toStringAsFixed(0)} EUR',
                         '${tempRange.end.toStringAsFixed(0)} EUR',
                       ),
-                      onChanged: (value) => setModalState(() => tempRange = value),
+                      onChanged: (value) =>
+                          setModalState(() => tempRange = value),
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -446,7 +450,8 @@ class _StoreProductCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final favoriteIds = ref.watch(favoriteIdsProvider).valueOrNull ?? <String>{};
+    final favoriteIds =
+        ref.watch(favoriteIdsProvider).valueOrNull ?? <String>{};
     final loadingIds = ref.watch(favoriteToggleLoadingProvider);
     final isFavorite = favoriteIds.contains(product.id);
     final isLoading = loadingIds.contains(product.id);
@@ -493,12 +498,20 @@ class _StoreProductCard extends ConsumerWidget {
                           ),
                         ),
                         errorWidget: (_, __, ___) => const Center(
-                          child: Icon(Icons.checkroom, size: 46, color: Colors.grey),
+                          child: Icon(
+                            Icons.checkroom,
+                            size: 46,
+                            color: Colors.grey,
+                          ),
                         ),
                       )
                     else
                       const Center(
-                        child: Icon(Icons.checkroom, size: 46, color: Colors.grey),
+                        child: Icon(
+                          Icons.checkroom,
+                          size: 46,
+                          color: Colors.grey,
+                        ),
                       ),
                     Positioned(
                       top: 6,
@@ -510,13 +523,18 @@ class _StoreProductCard extends ConsumerWidget {
                         ),
                         child: IconButton(
                           padding: const EdgeInsets.all(6),
-                          constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                          constraints: const BoxConstraints(
+                            minWidth: 30,
+                            minHeight: 30,
+                          ),
                           onPressed: isLoading
                               ? null
                               : () => _toggleFavorite(context, ref, product.id),
                           icon: Icon(
                             isFavorite ? Icons.favorite : Icons.favorite_border,
-                            color: isFavorite ? const Color(0xFFB5483F) : AppTheme.navyBlue,
+                            color: isFavorite
+                                ? const Color(0xFFB5483F)
+                                : AppTheme.navyBlue,
                             size: 18,
                           ),
                         ),
@@ -527,7 +545,10 @@ class _StoreProductCard extends ConsumerWidget {
                         top: 8,
                         left: 8,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: AppTheme.navyBlue,
                             borderRadius: BorderRadius.circular(20),
@@ -551,7 +572,10 @@ class _StoreProductCard extends ConsumerWidget {
               product.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14),
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+              ),
             ),
             const SizedBox(height: 3),
             Text(
@@ -618,7 +642,9 @@ class _StoreProductCard extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            result ? AppStrings.agregadoFavoritos : AppStrings.eliminadoFavoritos,
+            result
+                ? AppStrings.agregadoFavoritos
+                : AppStrings.eliminadoFavoritos,
           ),
         ),
       );

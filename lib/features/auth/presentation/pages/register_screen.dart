@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -10,14 +9,14 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 
-class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends ConsumerStatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -30,7 +29,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
+  Future<void> _handleSignUp() async {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -40,34 +39,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
 
     final controller = ref.read(authControllerProvider.notifier);
-
-    await controller.signIn(
+    await controller.signUp(
       email: _emailController.text.trim(),
       password: _passwordController.text.trim(),
     );
 
     final state = ref.read(authControllerProvider);
-
     if (!mounted) return;
 
     if (state.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('No se pudo iniciar sesion: ${state.errorMessage}'),
+          content: Text('No se pudo crear la cuenta: ${state.errorMessage}'),
           backgroundColor: AppTheme.error,
         ),
       );
       return;
     }
 
-    context.go('/home');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Cuenta creada. Revisa tu correo para confirmar el registro.'),
+      ),
+    );
+    context.go('/login');
   }
 
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
     final isLoading = authState.isLoading;
-    final isSigningIn = authState.action == AuthAction.signingIn && isLoading;
+    final isSigningUp = authState.action == AuthAction.signingUp && isLoading;
 
     return Scaffold(
       backgroundColor: AppTheme.navyBlue,
@@ -94,7 +96,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        AppStrings.bienvenida.toUpperCase(),
+                        AppStrings.crearCuenta.toUpperCase(),
                         style: GoogleFonts.inter(
                           fontSize: 14,
                           letterSpacing: 3,
@@ -169,27 +171,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     return null;
                   },
                 ).animate().fadeIn(delay: 300.ms).slideX(),
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {},
-                    child: Text(
-                      AppStrings.olvidarContrasena,
-                      style: GoogleFonts.inter(color: AppTheme.gold, fontSize: 14),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
                 SizedBox(
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: isLoading ? null : _handleLogin,
+                    onPressed: isLoading ? null : _handleSignUp,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.gold,
                       foregroundColor: AppTheme.navyBlue,
                     ),
-                    child: isSigningIn
+                    child: isSigningUp
                         ? const SizedBox(
                             height: 22,
                             width: 22,
@@ -199,7 +190,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                           )
                         : Text(
-                            AppStrings.iniciarSesion.toUpperCase(),
+                            AppStrings.crearCuenta.toUpperCase(),
                             style: GoogleFonts.inter(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -210,58 +201,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
                 Row(
-                  children: [
-                    Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'O',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: Colors.white54,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  height: 56,
-                  child: OutlinedButton.icon(
-                    onPressed: isLoading
-                        ? null
-                        : () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Google Sign-In requiere configuracion adicional.'),
-                              ),
-                            );
-                          },
-                    icon: const Icon(FontAwesomeIcons.google, size: 20),
-                    label: Text(
-                      AppStrings.iniciarConGoogle,
-                      style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      '${AppStrings.sinCuenta} ',
+                      'Ya tienes cuenta? ',
                       style: GoogleFonts.inter(color: Colors.white70),
                     ),
                     TextButton(
-                      onPressed: isLoading ? null : () => context.go('/register'),
+                      onPressed: isLoading ? null : () => context.go('/login'),
                       child: Text(
-                        AppStrings.crearCuenta,
+                        AppStrings.iniciarSesion,
                         style: GoogleFonts.inter(
                           color: AppTheme.gold,
                           fontWeight: FontWeight.bold,

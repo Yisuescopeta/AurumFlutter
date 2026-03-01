@@ -15,6 +15,7 @@ import '../../../favorites/presentation/providers/favorites_provider.dart';
 import '../../../notifications/presentation/providers/notifications_provider.dart';
 import '../../domain/models/product.dart';
 import '../providers/product_provider.dart';
+import '../widgets/home_hero_section.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -25,17 +26,30 @@ class HomeScreen extends ConsumerWidget {
     final flashOffersAsync = ref.watch(flashOffersProvider);
     final unreadAsync = ref.watch(unreadNotificationsCountProvider);
     final unreadCount = unreadAsync.valueOrNull ?? 0;
+    final flashProducts = flashOffersAsync.valueOrNull ?? const <Product>[];
+    final newArrivals = newArrivalsAsync.valueOrNull ?? const <Product>[];
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final heroHeight = screenWidth >= 1180
+        ? 330.0
+        : screenWidth >= 760
+        ? 300.0
+        : 250.0;
+    final gridColumns = screenWidth >= 1180
+        ? 4
+        : screenWidth >= 840
+        ? 3
+        : 2;
+    final gridAspect = screenWidth >= 1180
+        ? 0.74
+        : screenWidth >= 840
+        ? 0.70
+        : 0.65;
+    final flashCardWidth = screenWidth >= 1100 ? 220.0 : 196.0;
 
     return Scaffold(
       backgroundColor: AppTheme.lightGrey,
       appBar: AppBar(
-        title: Text(
-          'AURUM',
-          style: GoogleFonts.playfairDisplay(
-            fontWeight: FontWeight.bold,
-            letterSpacing: 2,
-          ),
-        ),
+        title: const _AurumWordmark(),
         actions: [
           IconButton(
             onPressed: () => context.push('/notifications'),
@@ -48,12 +62,18 @@ class HomeScreen extends ConsumerWidget {
                     right: -5,
                     top: -4,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 1,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFB5483F),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      constraints: const BoxConstraints(minWidth: 16, minHeight: 14),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 14,
+                      ),
                       child: Text(
                         unreadCount > 99 ? '99+' : '$unreadCount',
                         textAlign: TextAlign.center,
@@ -74,185 +94,161 @@ class HomeScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(
-              height: 250,
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(22),
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [AppTheme.navyBlue, Color(0xFF273250)],
-                ),
-              ),
-              child: Stack(
-                children: [
-                  Positioned(
-                    right: -30,
-                    top: -30,
-                    child: Container(
-                      width: 180,
-                      height: 180,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppTheme.gold.withValues(alpha: 0.18),
+            HomeHeroSection(
+              onTap: flashProducts.isEmpty
+                  ? null
+                  : () => context.push(
+                        '/product-detail',
+                        extra: flashProducts.first,
                       ),
-                    ),
-                  ),
-                  Positioned(
-                    left: 24,
-                    right: 24,
-                    bottom: 24,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppStrings.nuevaColeccion,
-                          style: GoogleFonts.inter(
-                            color: Colors.white70,
-                            fontSize: 12,
-                            letterSpacing: 2.4,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          AppStrings.esencialesVerano,
-                          style: GoogleFonts.playfairDisplay(
-                            color: Colors.white,
-                            fontSize: 36,
-                            fontWeight: FontWeight.w700,
-                            height: 1.08,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        SizedBox(
-                          height: 44,
-                          child: ElevatedButton(
-                            onPressed: () {},
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.gold,
-                              foregroundColor: AppTheme.navyBlue,
-                              minimumSize: const Size(170, 44),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text(AppStrings.comprarAhora),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
             ).animate().fadeIn().slideY(begin: 0.08, end: 0),
-            flashOffersAsync.when(
-              data: (products) {
-                if (products.isEmpty) {
-                  return const SizedBox.shrink();
-                }
-                return Container(
-                  margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Color(0xFF0E1528), Color(0xFF1F2B47)],
+            _HomeMetricsStrip(
+              newArrivalsCount: newArrivals.length,
+              flashOffersCount: flashProducts.length,
+              onTapFlash: flashProducts.isEmpty
+                  ? null
+                  : () => context.push(
+                      '/product-detail',
+                      extra: flashProducts.first,
                     ),
-                    border: Border.all(color: AppTheme.gold.withValues(alpha: 0.45), width: 1.2),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x28000000),
-                        blurRadius: 24,
-                        offset: Offset(0, 10),
+              onTapNewArrivals: newArrivals.isEmpty
+                  ? null
+                  : () => context.push(
+                      '/product-detail',
+                      extra: newArrivals.first,
+                    ),
+            ).animate().fadeIn(delay: 120.ms).slideY(begin: 0.06, end: 0),
+            flashOffersAsync
+                .when(
+                  data: (products) {
+                    if (products.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
+                    return Container(
+                      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF0E1528), Color(0xFF1F2B47)],
+                        ),
+                        border: Border.all(
+                          color: AppTheme.gold.withValues(alpha: 0.45),
+                          width: 1.2,
+                        ),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x28000000),
+                            blurRadius: 24,
+                            offset: Offset(0, 10),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            width: 34,
-                            height: 34,
-                            decoration: BoxDecoration(
-                              color: AppTheme.gold,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(
-                              Icons.bolt_rounded,
-                              color: AppTheme.navyBlue,
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              AppStrings.ofertasFlash.toUpperCase(),
-                              style: GoogleFonts.playfairDisplay(
-                                color: Colors.white,
-                                fontSize: 26,
-                                fontWeight: FontWeight.w700,
+                          Row(
+                            children: [
+                              Container(
+                                width: 34,
+                                height: 34,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.gold,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  Icons.bolt_rounded,
+                                  color: AppTheme.navyBlue,
+                                  size: 20,
+                                ),
                               ),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {},
-                            child: Text(
-                              AppStrings.verTodo,
-                              style: GoogleFonts.inter(
-                                color: AppTheme.gold,
-                                fontWeight: FontWeight.w700,
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  AppStrings.ofertasFlash.toUpperCase(),
+                                  style: GoogleFonts.playfairDisplay(
+                                    color: Colors.white,
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                               ),
+                              TextButton(
+                                onPressed: flashProducts.isEmpty
+                                    ? null
+                                    : () => context.push(
+                                        '/product-detail',
+                                        extra: flashProducts.first,
+                                      ),
+                                child: Text(
+                                  AppStrings.verTodo,
+                                  style: GoogleFonts.inter(
+                                    color: AppTheme.gold,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            height: 306,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: products.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(width: 12),
+                              itemBuilder: (context, index) {
+                                return SizedBox(
+                                  width: flashCardWidth,
+                                  child: _FlashProductCard(
+                                    product: products[index],
+                                  ),
+                                );
+                              },
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        height: 306,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: products.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 12),
-                          itemBuilder: (context, index) {
-                            return SizedBox(
-                              width: 196,
-                              child: _FlashProductCard(product: products[index]),
-                            );
-                          },
-                        ),
+                    );
+                  },
+                  loading: () => Container(
+                    margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 20),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF0E1528), Color(0xFF1F2B47)],
                       ),
-                    ],
+                      border: Border.all(
+                        color: AppTheme.gold.withValues(alpha: 0.45),
+                        width: 1.2,
+                      ),
+                    ),
+                    child: const Center(
+                      child: CircularProgressIndicator(color: AppTheme.gold),
+                    ),
                   ),
-                );
-              },
-              loading: () => Container(
-                margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 20),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF0E1528), Color(0xFF1F2B47)],
-                  ),
-                  border: Border.all(color: AppTheme.gold.withValues(alpha: 0.45), width: 1.2),
-                ),
-                child: const Center(child: CircularProgressIndicator(color: AppTheme.gold)),
-              ),
-              error: (_, __) => const SizedBox.shrink(),
-            ),
+                  error: (_, __) => const SizedBox.shrink(),
+                )
+                .animate()
+                .fadeIn(delay: 180.ms)
+                .slideY(begin: 0.04, end: 0),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: AurumSectionHeader(
                 title: AppStrings.novedades,
                 actionLabel: AppStrings.verTodo,
-                onActionTap: () {},
+                onActionTap: newArrivals.isEmpty
+                    ? null
+                    : () => context.push(
+                        '/product-detail',
+                        extra: newArrivals.first,
+                      ),
               ),
             ),
             newArrivalsAsync.when(
@@ -268,9 +264,9 @@ class HomeScreen extends ConsumerWidget {
                   padding: const EdgeInsets.all(16),
                   physics: const NeverScrollableScrollPhysics(),
                   shrinkWrap: true,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.65,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: gridColumns,
+                    childAspectRatio: gridAspect,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
                   ),
@@ -296,6 +292,191 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
+class _AurumWordmark extends StatelessWidget {
+  const _AurumWordmark();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'AURUM',
+          style: GoogleFonts.playfairDisplay(
+            fontWeight: FontWeight.w700,
+            letterSpacing: 2.6,
+            fontSize: 25,
+            color: AppTheme.navyBlue,
+            height: 1,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'FASHION HOUSE',
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.6,
+            fontSize: 10,
+            color: const Color(0xFF6D778C),
+            height: 1,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HeroInfoPill extends StatelessWidget {
+  const _HeroInfoPill({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.white, size: 14),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: GoogleFonts.inter(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeMetricsStrip extends StatelessWidget {
+  const _HomeMetricsStrip({
+    required this.newArrivalsCount,
+    required this.flashOffersCount,
+    this.onTapFlash,
+    this.onTapNewArrivals,
+  });
+
+  final int newArrivalsCount;
+  final int flashOffersCount;
+  final VoidCallback? onTapFlash;
+  final VoidCallback? onTapNewArrivals;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: _MetricCard(
+              title: 'Novedades',
+              value: '$newArrivalsCount',
+              icon: Icons.auto_awesome_outlined,
+              onTap: onTapNewArrivals,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _MetricCard(
+              title: 'Flash',
+              value: '$flashOffersCount',
+              icon: Icons.flash_on_rounded,
+              onTap: onTapFlash,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetricCard extends StatelessWidget {
+  const _MetricCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+    this.onTap,
+  });
+
+  final String title;
+  final String value;
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFE8DDC5)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x12000000),
+              blurRadius: 12,
+              offset: Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: AppTheme.navyBlue,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: AppTheme.gold, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      color: const Color(0xFF4B566E),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    value,
+                    style: GoogleFonts.playfairDisplay(
+                      color: AppTheme.navyBlue,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _FlashProductCard extends ConsumerWidget {
   const _FlashProductCard({required this.product});
 
@@ -303,7 +484,8 @@ class _FlashProductCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final favoriteIds = ref.watch(favoriteIdsProvider).valueOrNull ?? <String>{};
+    final favoriteIds =
+        ref.watch(favoriteIdsProvider).valueOrNull ?? <String>{};
     final loadingIds = ref.watch(favoriteToggleLoadingProvider);
     final isFavorite = favoriteIds.contains(product.id);
     final isLoading = loadingIds.contains(product.id);
@@ -336,7 +518,11 @@ class _FlashProductCard extends ConsumerWidget {
                         fit: BoxFit.cover,
                         placeholder: (_, __) => const _AurumImagePlaceholder(),
                         errorWidget: (_, __, ___) => const Center(
-                          child: Icon(Icons.broken_image_outlined, size: 34, color: Colors.white70),
+                          child: Icon(
+                            Icons.broken_image_outlined,
+                            size: 34,
+                            color: Colors.white70,
+                          ),
                         ),
                       )
                     else
@@ -447,7 +633,9 @@ class _FlashProductCard extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            result ? AppStrings.agregadoFavoritos : AppStrings.eliminadoFavoritos,
+            result
+                ? AppStrings.agregadoFavoritos
+                : AppStrings.eliminadoFavoritos,
           ),
         ),
       );
@@ -468,7 +656,8 @@ class ProductCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final favoriteIds = ref.watch(favoriteIdsProvider).valueOrNull ?? <String>{};
+    final favoriteIds =
+        ref.watch(favoriteIdsProvider).valueOrNull ?? <String>{};
     final loadingIds = ref.watch(favoriteToggleLoadingProvider);
     final isFavorite = favoriteIds.contains(product.id);
     final isLoading = loadingIds.contains(product.id);
@@ -496,7 +685,11 @@ class ProductCard extends ConsumerWidget {
                         fit: BoxFit.cover,
                         placeholder: (_, __) => const _AurumImagePlaceholder(),
                         errorWidget: (_, __, ___) => const Center(
-                          child: Icon(Icons.checkroom, size: 48, color: Colors.grey),
+                          child: Icon(
+                            Icons.checkroom,
+                            size: 48,
+                            color: Colors.grey,
+                          ),
                         ),
                       )
                     else
@@ -519,7 +712,10 @@ class ProductCard extends ConsumerWidget {
                         top: 8,
                         left: 8,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: AppTheme.navyBlue,
                             borderRadius: BorderRadius.circular(20),
@@ -543,7 +739,10 @@ class ProductCard extends ConsumerWidget {
               product.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
             ),
             const SizedBox(height: 4),
             Row(
@@ -599,7 +798,9 @@ class ProductCard extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            result ? AppStrings.agregadoFavoritos : AppStrings.eliminadoFavoritos,
+            result
+                ? AppStrings.agregadoFavoritos
+                : AppStrings.eliminadoFavoritos,
           ),
         ),
       );

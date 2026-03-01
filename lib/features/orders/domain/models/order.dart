@@ -14,6 +14,8 @@
   final String? trackingNumber;
   final String? carrier;
   final DateTime? estimatedDelivery;
+  final String? refundStatus;
+  final DateTime? refundedAt;
 
   OrderModel({
     required this.id,
@@ -31,6 +33,8 @@
     required this.trackingNumber,
     required this.carrier,
     required this.estimatedDelivery,
+    required this.refundStatus,
+    required this.refundedAt,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -53,6 +57,10 @@
       carrier: json['carrier']?.toString(),
       estimatedDelivery: json['estimated_delivery'] != null
           ? DateTime.tryParse(json['estimated_delivery'].toString())
+          : null,
+      refundStatus: json['refund_status']?.toString(),
+      refundedAt: json['refunded_at'] != null
+          ? DateTime.tryParse(json['refunded_at'].toString())
           : null,
     );
   }
