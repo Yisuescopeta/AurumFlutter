@@ -248,7 +248,7 @@ class CheckoutService {
               : reason,
         );
       } on FunctionException catch (e) {
-        if (e.status == 404 || e.status == 409 || e.status >= 500) {
+        if (e.status == 401 || e.status == 404 || e.status == 409 || e.status >= 500) {
           lastError = e;
           continue;
         }
@@ -259,5 +259,46 @@ class CheckoutService {
     }
 
     throw OrderConfirmationDeferredException(lastError?.toString());
+  }
+
+  Future<bool> waitForOrderPersistence(
+    String paymentIntentId, {
+    Duration timeout = const Duration(seconds: 12),
+  }) async {
+    if (paymentIntentId.trim().isEmpty) return false;
+
+    final startedAt = DateTime.now();
+    const pollDelays = <Duration>[
+      Duration.zero,
+      Duration(milliseconds: 700),
+      Duration(milliseconds: 1300),
+      Duration(milliseconds: 2200),
+      Duration(milliseconds: 3200),
+      Duration(milliseconds: 4600),
+    ];
+
+    for (final delay in pollDelays) {
+      if (delay > Duration.zero) {
+        await Future.delayed(delay);
+      }
+
+      final elapsed = DateTime.now().difference(startedAt);
+      if (elapsed > timeout) break;
+
+      try {
+        final rows = await _supabase
+            .from('orders')
+            .select('id')
+            .eq('payment_intent_id', paymentIntentId)
+            .limit(1);
+        if (rows.isNotEmpty) {
+          return true;
+        }
+      } catch (_) {
+        // Ignore transient read failures during background sync.
+      }
+    }
+
+    return false;
   }
 }

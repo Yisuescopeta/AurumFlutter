@@ -61,6 +61,34 @@ function parseCompactItems(metadata: Record<string, string | undefined>): Compac
   return [];
 }
 
+async function ensureProfileExists(userId: string, email: string, fullName: string) {
+  const { data: existingProfile, error: profileReadError } = await supabaseAdmin
+    .from('profiles')
+    .select('id')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (profileReadError) {
+    throw new Error(`No se pudo consultar el perfil del usuario: ${profileReadError.message}`);
+  }
+
+  if (existingProfile?.id) return;
+
+  const payload = {
+    id: userId,
+    email: email || null,
+    full_name: fullName || null,
+  };
+
+  const { error: profileInsertError } = await supabaseAdmin
+    .from('profiles')
+    .upsert(payload, { onConflict: 'id' });
+
+  if (profileInsertError) {
+    throw new Error(`No se pudo crear el perfil del usuario: ${profileInsertError.message}`);
+  }
+}
+
 async function decrementVariantStock(productId: string, size: string, quantity: number) {
   const { error: stockError } = await supabaseAdmin.rpc('decrement_variant_stock', {
     p_product_id: productId,
@@ -70,31 +98,43 @@ async function decrementVariantStock(productId: string, size: string, quantity: 
 
   if (!stockError) return;
 
-  // Fallback if RPC is missing or failing.
-  const { data: variant, error: variantError } = await supabaseAdmin
+  // Fallback if RPC is missing or failing (supports duplicate rows per product/size).
+  const { data: variants, error: variantsError } = await supabaseAdmin
     .from('product_variants')
-    .select('stock')
-    .eq('product_id', productId)
-    .eq('size', size)
-    .single();
-
-  if (variantError || !variant) {
-    throw new Error(`No se pudo leer stock de ${productId}/${size}: ${variantError?.message}`);
-  }
-
-  const current = Number(variant.stock ?? 0);
-  if (current < quantity) {
-    throw new Error(`Stock insuficiente en decremento para ${productId}/${size}`);
-  }
-
-  const { error: updateError } = await supabaseAdmin
-    .from('product_variants')
-    .update({ stock: current - quantity })
+    .select('id,stock')
     .eq('product_id', productId)
     .eq('size', size);
 
-  if (updateError) {
-    throw new Error(`No se pudo actualizar stock de ${productId}/${size}: ${updateError.message}`);
+  if (variantsError || !variants || variants.length == 0) {
+    throw new Error(`No se pudo leer stock de ${productId}/${size}: ${variantsError?.message}`);
+  }
+
+  const totalStock = variants.reduce((sum, variant) => sum + Math.max(0, Number(variant.stock ?? 0)), 0);
+  if (totalStock < quantity) {
+    throw new Error(`Stock insuficiente en decremento para ${productId}/${size}`);
+  }
+
+  let remaining = quantity;
+  for (const variant of variants) {
+    if (remaining <= 0) break;
+    const currentStock = Math.max(0, Number(variant.stock ?? 0));
+    if (currentStock <= 0) continue;
+
+    const decrement = Math.min(currentStock, remaining);
+    const { error: updateError } = await supabaseAdmin
+      .from('product_variants')
+      .update({ stock: currentStock - decrement })
+      .eq('id', variant.id);
+
+    if (updateError) {
+      throw new Error(`No se pudo actualizar stock de ${productId}/${size}: ${updateError.message}`);
+    }
+
+    remaining -= decrement;
+  }
+
+  if (remaining > 0) {
+    throw new Error(`No se pudo descontar todo el stock de ${productId}/${size}`);
   }
 }
 
@@ -134,6 +174,8 @@ export async function ensureOrderFromPaymentIntent(intent: PaymentIntentLike): P
   const couponId = md.coupon_id || null;
 
   const customerEmail = intent.receipt_email || '';
+  await ensureProfileExists(userId, customerEmail, fullName);
+
   const orderInsert = {
     user_id: userId,
     customer_email: customerEmail,
@@ -164,14 +206,17 @@ export async function ensureOrderFromPaymentIntent(intent: PaymentIntentLike): P
 
   // Validate stock before inserting items.
   for (const item of compactItems) {
-    const { data: variant, error: variantError } = await supabaseAdmin
+    const { data: variants, error: variantError } = await supabaseAdmin
       .from('product_variants')
       .select('stock')
       .eq('product_id', item.p)
-      .eq('size', item.s)
-      .single();
+      .eq('size', item.s);
 
-    if (variantError || !variant || Number(variant.stock ?? 0) < item.q) {
+    const availableStock = Array.isArray(variants)
+      ? variants.reduce((sum, variant) => sum + Math.max(0, Number(variant.stock ?? 0)), 0)
+      : 0;
+
+    if (variantError || !variants || variants.length == 0 || availableStock < item.q) {
       console.warn(`[order-from-intent] Stock failure for ${item.n}. Refunding...`);
       await stripe.refunds.create({ payment_intent: paymentIntentId });
       await supabaseAdmin
@@ -201,12 +246,15 @@ export async function ensureOrderFromPaymentIntent(intent: PaymentIntentLike): P
     throw new Error(`Failed to insert order items: ${itemError.message}`);
   }
 
-  await supabaseAdmin.from('order_status_history').insert({
+  const { error: historyError } = await supabaseAdmin.from('order_status_history').insert({
     order_id: order.id,
     status: 'paid',
     notes: 'Pago confirmado por Stripe',
     created_by: userId,
   });
+  if (historyError) {
+    console.error('[order-from-intent] history insert error:', historyError);
+  }
 
   for (const item of compactItems) {
     await decrementVariantStock(item.p, item.s, item.q);

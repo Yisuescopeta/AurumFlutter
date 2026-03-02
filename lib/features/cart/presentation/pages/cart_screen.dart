@@ -373,12 +373,23 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         couponCode: cart.couponCode,
       );
 
+      var orderPersisted = false;
       try {
         await CheckoutService.instance.confirmOrderAfterPayment(
           result.paymentIntentId,
         );
+        orderPersisted = true;
       } on OrderConfirmationDeferredException {
-        // Payment already succeeded in Stripe. Do not block UX waiting for DB sync.
+        orderPersisted = await CheckoutService.instance.waitForOrderPersistence(
+          result.paymentIntentId,
+        );
+      }
+
+      if (!orderPersisted) {
+        throw Exception(
+          'Pago recibido, pero el pedido aun no se ha sincronizado. '
+          'No se vaciara el carrito hasta confirmarlo.',
+        );
       }
 
       if (!mounted) return;
